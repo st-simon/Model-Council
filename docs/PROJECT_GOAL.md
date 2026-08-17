@@ -34,6 +34,8 @@ Output:
 
 ## Phase 1 acceptance criteria
 
+Verification status: **all criteria passed on 2026-08-18**.
+
 1. A fixture-backed CLI command completes an end-to-end four-role blind review
    without network access or credentials.
 2. Reviewers receive no other reviewer's output before aggregation.

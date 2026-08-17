@@ -9,7 +9,7 @@
 
 ## D-002 — Stable orchestration seams
 
-- Status: proposed
+- Status: accepted
 - Decision: keep the application core behind three injected ports:
   `ModelGateway`, `RunStore`, and `ArtifactStore`.
 - Reason: provider, persistence, and export variability should not leak into
@@ -22,7 +22,7 @@
 
 ## D-003 — Offline-first Phase 1
 
-- Status: proposed
+- Status: accepted
 - Decision: use deterministic fixture model adapters for the first vertical
   slice; connect real providers only after the contracts, isolation tests, and
   fail-closed data boundary are verified.
@@ -31,14 +31,14 @@
 
 ## D-004 — Structured source of truth
 
-- Status: proposed
+- Status: accepted
 - Decision: SQLite is the v0.x structured source of truth. Rendered prompts,
   raw responses, Markdown, and JSON are immutable evidence snapshots/exports.
 - Reason: this avoids dual-write ambiguity while keeping runs auditable.
 
 ## D-005 — Provider data policy defaults
 
-- Status: proposed
+- Status: accepted
 - Decision: default-deny source-code transmission until the human governor
   approves the provider matrix. Credentials and detected secrets are always
   denied; scanner failure blocks egress.

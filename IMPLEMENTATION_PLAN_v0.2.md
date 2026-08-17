@@ -1,7 +1,7 @@
 # Model Council Implementation Plan v0.2
 
-Status: proposed on 2026-08-18. No application code, dependencies, credentials,
-or provider calls are authorized by this document alone.
+Status: Phase 1 verified on 2026-08-18. Real provider calls, credentials, and
+source-code egress remain outside this approval.
 
 ## Delivery strategy
 

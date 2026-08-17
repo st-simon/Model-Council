@@ -37,9 +37,13 @@ future deployment.
 
 ## Verification
 
-Until Phase 1 code exists, verify the preparation package with:
+Verify Phase 1 changes with:
 
 ```bash
+uv lock --check
+uv run ruff check .
+uv run ruff format --check .
+uv run mypy src
+uv run pytest -q
 git diff --check
-rg -n "VERIFY_AT_INIT|proposed" README.md docs proposals TASKS.md DECISIONS.md
 ```

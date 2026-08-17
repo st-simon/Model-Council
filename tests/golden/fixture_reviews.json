@@ -1,0 +1,50 @@
+{
+  "fixture_qwen": {
+    "reviewer": "fixture_qwen",
+    "summary": "fixture_qwen completed an offline fixture review.",
+    "findings": [
+      {
+        "category": "architecture",
+        "raw_severity": "P2",
+        "claim": "The proposal needs an explicit transaction invariant.",
+        "recommendation": "Document and test the atomic update boundary."
+      }
+    ]
+  },
+  "fixture_kimi": {
+    "reviewer": "fixture_kimi",
+    "summary": "fixture_kimi completed an offline fixture review.",
+    "findings": [
+      {
+        "category": "architecture",
+        "raw_severity": "P2",
+        "claim": "The proposal needs an explicit transaction invariant.",
+        "recommendation": "Document and test the atomic update boundary."
+      }
+    ]
+  },
+  "fixture_grok": {
+    "reviewer": "fixture_grok",
+    "summary": "fixture_grok completed an offline fixture review.",
+    "findings": [
+      {
+        "category": "architecture",
+        "raw_severity": "P2",
+        "claim": "The proposal needs an explicit transaction invariant.",
+        "recommendation": "Document and test the atomic update boundary."
+      }
+    ]
+  },
+  "fixture_glm": {
+    "reviewer": "fixture_glm",
+    "summary": "fixture_glm completed an offline fixture review.",
+    "findings": [
+      {
+        "category": "architecture",
+        "raw_severity": "P2",
+        "claim": "The proposal needs an explicit transaction invariant.",
+        "recommendation": "Document and test the atomic update boundary."
+      }
+    ]
+  }
+}

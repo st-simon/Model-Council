@@ -1,0 +1,8 @@
+project_id: tracer-project
+run_id: R-TRACER-001
+proposal: Add a transaction boundary around order and inventory updates.
+context:
+  src/order.py: update_order_status(); update_inventory()
+reviewers:
+  - fixture_qwen
+minimum_successful_reviewers: 1

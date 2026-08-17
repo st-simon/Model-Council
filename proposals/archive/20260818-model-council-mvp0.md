@@ -1,8 +1,9 @@
 # Model Council v0.2 — Offline Blind-Review Kernel
 
 - Proposal ID: `20260818-model-council-mvp0`
-- Status: `proposed`
+- Status: `verified`
 - Date: 2026-08-18
+- Approved: 2026-08-18 by Human Governor
 - Owner: Codex (Coordinator / Architect / Builder after approval)
 - Human governor: user
 
@@ -131,6 +132,15 @@ default-deny future data policy.
 - Hygiene: `git diff --check`, ignored secret/local-state paths, and no network
   required by default tests.
 
+## Verification record
+
+- `uv lock --check`: passed with 31 resolved packages
+- `ruff check .`: passed
+- `mypy src`: passed in strict mode across 10 source files
+- `pytest -q`: 15 tests passed
+- Four-reviewer CLI smoke: completed with four isolated successful reviewers
+- Remote provider calls and credentials: not used
+
 ## Done criteria
 
 All Phase 1 acceptance criteria in `docs/PROJECT_GOAL.md` pass from a clean
@@ -140,7 +150,7 @@ through `approved -> in_progress -> implemented -> verified`.
 
 ## State transition plan
 
-- Current: `proposed`
+- Current: `verified`
 - On explicit approval: `approved`, then `in_progress` when code work begins
 - After implementation: `implemented`
 - After required verification: `verified`

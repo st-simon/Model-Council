@@ -6,7 +6,7 @@ findings are normalized and reconciled, and Codex remains the only repository
 write actor. High-impact unresolved decisions are escalated to the human
 governor.
 
-Status: **implementation preparation / proposal pending approval**.
+Status: **Phase 1 offline blind-review kernel verified**.
 
 Blueprint provenance: `MODEL_COUNCIL_BLUEPRINT_v0.2.md`, 1,833 lines,
 SHA-256 `fba10c921eeaf0e6bce18b5b123294352e0748ceff880b53646362925cb8c7b5`.
@@ -25,9 +25,9 @@ reviewers before any real provider call.
 
 - Workspace baselines: AI Agent or Workflow App + Python CLI or Automation
 - Target runtime: Python `>=3.12,<3.14`
-- Planned dependency manager: `uv` with `uv.lock` (not yet installed locally)
-- Planned core: Typer, Pydantic v2, SQLAlchemy, Alembic, SQLite, Jinja2,
-  `httpx`, `tenacity`, `orjson`, and a provider gateway adapter
+- Dependency manager: `uv` with committed `uv.lock`
+- Phase 1 core: Typer, Pydantic v2, SQLAlchemy, Alembic, SQLite, PyYAML,
+  `asyncio`, and `orjson`
 - Deferred: Redis, PostgreSQL, Docker Compose, LangGraph, CrewAI, AutoGen,
   dashboard, and production deployment
 
@@ -40,17 +40,38 @@ model slugs have not been inspected or configured.
 - [Project goal](docs/PROJECT_GOAL.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Implementation plan](IMPLEMENTATION_PLAN_v0.2.md)
-- [Active proposal](proposals/active/20260818-model-council-mvp0.md)
+- [Verified Phase 1 proposal](proposals/archive/20260818-model-council-mvp0.md)
+- [Security boundary](docs/SECURITY.md)
 - [Decisions](DECISIONS.md)
 - [Tasks](TASKS.md)
 
 ## Setup and commands
 
-No application dependencies or provider SDKs are installed yet. The approved
-Phase 1 will add reproducible setup, run, and test commands. Until then:
+Install `uv`, then create the locked development environment:
 
 ```bash
-git diff --check
+uv sync --locked --all-groups
 ```
 
-Runtime data will default to `~/.model-council/` and must never be committed.
+Run the four-reviewer offline example:
+
+```bash
+uv run council review \
+  --fixture examples/offline-review.yaml \
+  --home .model-council
+uv run council status R-OFFLINE-SAMPLE-001 --home .model-council
+uv run council resume R-OFFLINE-SAMPLE-001 --home .model-council
+```
+
+Verify the project:
+
+```bash
+uv lock --check
+uv run ruff check .
+uv run mypy src
+uv run pytest -q
+```
+
+The CLI requires an explicit `--home`; local examples use `.model-council/`,
+which is ignored. Production-facing defaults and live providers remain Phase 2
+work and are not authorized.
