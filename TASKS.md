@@ -25,11 +25,13 @@ M1 — Offline blind-review kernel
 - [x] Add partial failure, schema repair, quorum, resume, and idempotency.
 - [x] Export a raw council report and run full Phase 1 verification.
 
-## Next milestone — not approved
+## Next milestone — Gate A approved
 
-M2 — Provider verification and guarded live review. Prepare a separate proposal
-after the blocking decisions below are resolved; do not add provider egress on
-the authority of Phase 1 approval.
+M2 — Provider verification and guarded live review. The independent proposal
+`20260821-phase-2-provider-verification` received Gate A approval on 2026-08-21.
+Phase 2A offline provider-readiness implementation may begin. Do not install
+provider dependencies, add a live adapter, use credentials, or allow provider
+egress without the separate Gate B and Gate C approvals defined in the proposal.
 
 ## Blocking decisions for live-provider work
 
