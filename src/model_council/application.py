@@ -211,7 +211,7 @@ class CouncilApplication:
         context_hash: str,
     ) -> None:
         review_attempts = sum(
-            attempt.kind == AttemptKind.REVIEW
+            attempt.role == request.role and attempt.kind == AttemptKind.REVIEW
             for attempt in self.run_store.list_attempts(request.run_id)
         )
         will_retry = error.retryable and (

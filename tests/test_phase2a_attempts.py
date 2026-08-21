@@ -45,6 +45,71 @@ def test_transient_failure_is_retried_without_repeating_successes(
     ]
 
 
+def test_attempt_ceiling_is_counted_per_logical_call(tmp_path: Path) -> None:
+    gateway = FixtureModelGateway(behaviors={"fixture_qwen": "transient_once"})
+    run_store = SQLiteRunStore(tmp_path / "council.db")
+    application = CouncilApplication(
+        gateway=gateway,
+        run_store=run_store,
+        artifact_store=LocalArtifactStore(tmp_path),
+    )
+    request = ReviewInput(
+        project_id="per-call-attempt-project",
+        run_id="R-PER-CALL-ATTEMPT-001",
+        proposal="Verify per-call retry accounting.",
+        reviewers=["fixture_qwen", "fixture_kimi"],
+        minimum_successful_reviewers=2,
+        max_provider_attempts=2,
+    )
+
+    first = asyncio.run(application.start_review(request))
+
+    assert first.state == RunState.BLIND_REVIEW_RUNNING
+    calls = {call.role: call for call in run_store.list_calls(request.run_id)}
+    assert calls["fixture_qwen"].status == CallStatus.RETRY_WAIT
+    assert calls["fixture_kimi"].status == CallStatus.SUCCEEDED
+
+    resumed = asyncio.run(application.resume(request.run_id))
+
+    assert resumed.state == RunState.COMPLETED
+    qwen_attempts = [
+        attempt
+        for attempt in run_store.list_attempts(request.run_id)
+        if attempt.role == "fixture_qwen"
+    ]
+    assert [attempt.status for attempt in qwen_attempts] == [
+        AttemptStatus.RETRY_WAIT,
+        AttemptStatus.SUCCEEDED,
+    ]
+
+
+def test_transient_failure_is_terminal_when_attempt_ceiling_is_one(
+    tmp_path: Path,
+) -> None:
+    gateway = FixtureModelGateway(behaviors={"fixture_qwen": "transient_once"})
+    run_store = SQLiteRunStore(tmp_path / "council.db")
+    application = CouncilApplication(
+        gateway=gateway,
+        run_store=run_store,
+        artifact_store=LocalArtifactStore(tmp_path),
+    )
+    request = ReviewInput(
+        project_id="terminal-attempt-project",
+        run_id="R-TERMINAL-ATTEMPT-001",
+        proposal="Do not exceed the attempt ceiling.",
+        reviewers=["fixture_qwen"],
+        max_provider_attempts=1,
+    )
+
+    summary = asyncio.run(application.start_review(request))
+
+    assert summary.state == RunState.FAILED
+    assert run_store.list_calls(request.run_id)[0].status == CallStatus.FAILED_TERMINAL
+    assert [attempt.status for attempt in run_store.list_attempts(request.run_id)] == [
+        AttemptStatus.FAILED_TERMINAL
+    ]
+
+
 def test_interrupted_attempt_is_preserved_as_timed_out_on_resume(
     tmp_path: Path,
 ) -> None:

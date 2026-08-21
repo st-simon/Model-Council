@@ -93,6 +93,39 @@ def test_scanner_error_fails_closed_before_delegate_call() -> None:
     assert delegate.requests == []
 
 
+@pytest.mark.parametrize(
+    ("network_enabled", "data_class", "reason"),
+    [
+        (False, "PUBLIC", "NETWORK_DISABLED"),
+        (True, "INTERNAL", "DATA_CLASS_DENIED"),
+    ],
+)
+def test_policy_matrix_denies_before_delegate_call(
+    network_enabled: bool, data_class: str, reason: str
+) -> None:
+    delegate = FixtureModelGateway()
+    gateway = GuardedModelGateway(
+        delegate=delegate,
+        provider="fixture",
+        policy=ProviderConfig(
+            network_enabled=network_enabled,
+            allowed_data_classes=["PUBLIC"],
+        ),
+        guard=EgressGuard(),
+    )
+    request = _request({"safe.py": "return True"})
+    assert request.envelope is not None
+    policy_metadata = request.envelope.policy_metadata.model_copy(
+        update={"data_class": data_class}
+    )
+    envelope = request.envelope.model_copy(update={"policy_metadata": policy_metadata})
+
+    with pytest.raises(EgressDenied, match=reason):
+        asyncio.run(gateway.review(request.model_copy(update={"envelope": envelope})))
+
+    assert delegate.requests == []
+
+
 def test_offline_verify_models_reports_declared_fixture_capabilities() -> None:
     runner = CliRunner()
 

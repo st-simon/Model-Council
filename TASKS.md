@@ -70,6 +70,9 @@ the exact commit, console, credential, window, corpus, and limit conditions.
 - [x] Split JSON-mode, schema-enforcement, and local-validation capabilities.
 - [x] Reject provider output extras and non-stop `finish_reason` values.
 - [x] Implement and mock-test the two-request Gate C runner.
+- [x] Harden provider usage invariants and reject inconsistent cache accounting.
+- [x] Cover transport, finish reason, request ID, cache, repair, alias, envelope,
+  egress-policy, and per-call attempt-ceiling boundaries.
 - [x] Synchronize README and Security/Ops status language.
 - [ ] Clean-commit offline preflight immediately before live execution.
 - [ ] Authorized live execution within the approved window.

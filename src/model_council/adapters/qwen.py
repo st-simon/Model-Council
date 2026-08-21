@@ -213,6 +213,13 @@ class QwenModelGateway:
             output_tokens = int(usage["completion_tokens"])
             details = usage.get("prompt_tokens_details") or {}
             cached_tokens = int(details.get("cached_tokens", 0))
+            if (
+                input_tokens < 0
+                or output_tokens < 0
+                or cached_tokens < 0
+                or cached_tokens > input_tokens
+            ):
+                raise ValueError
             if not isinstance(raw_output, str) or not isinstance(actual_model_id, str):
                 raise TypeError
         except (

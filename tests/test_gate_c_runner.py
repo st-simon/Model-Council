@@ -155,6 +155,80 @@ def test_gate_c_rejects_model_mismatch_as_invalid(tmp_path: Path) -> None:
     assert calls[0].error_code == "ACTUAL_MODEL_ID_MISMATCH"
 
 
+@pytest.mark.parametrize(
+    ("request_id", "cached_tokens", "error_code"),
+    [
+        (None, 0, "PROVIDER_REQUEST_ID_MISSING"),
+        ("req-probe", 1, "CACHE_OBSERVED"),
+    ],
+)
+def test_gate_c_rejects_missing_evidence_or_observed_cache(
+    tmp_path: Path,
+    request_id: str | None,
+    cached_tokens: int,
+    error_code: str,
+) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        headers = {"x-request-id": request_id} if request_id is not None else {}
+        return httpx.Response(
+            200,
+            headers=headers,
+            json={
+                "model": MODEL,
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {"content": '{"status":"ok"}'},
+                    }
+                ],
+                "usage": {
+                    "prompt_tokens": 20,
+                    "completion_tokens": 5,
+                    "prompt_tokens_details": {"cached_tokens": cached_tokens},
+                },
+            },
+        )
+
+    runner, store, client = _runner(tmp_path, httpx.MockTransport(handler))
+    try:
+        with pytest.raises(GateCStopped, match=error_code):
+            asyncio.run(runner.execute(CORPUS))
+    finally:
+        asyncio.run(client.aclose())
+
+    calls = store.list_calls("R-GATE-C-QWEN-001")
+    assert len(calls) == 1
+    assert calls[0].status == CallStatus.INVALID
+    assert calls[0].error_code == error_code
+
+
+def test_gate_c_stops_after_invalid_provider_usage(tmp_path: Path) -> None:
+    requests = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal requests
+        requests += 1
+        return _provider_response(
+            '{"status":"ok"}',
+            "req-probe",
+            input_tokens=-1,
+        )
+
+    runner, store, client = _runner(tmp_path, httpx.MockTransport(handler))
+    try:
+        with pytest.raises(GateCStopped, match="PROVIDER_INVALID_RESPONSE"):
+            asyncio.run(runner.execute(CORPUS))
+    finally:
+        asyncio.run(client.aclose())
+
+    assert requests == 1
+    assert store.load_state("R-GATE-C-QWEN-001") == RunState.FAILED
+    calls = store.list_calls("R-GATE-C-QWEN-001")
+    assert len(calls) == 1
+    assert calls[0].status == CallStatus.FAILED_TERMINAL
+    assert calls[0].error_code == "PROVIDER_INVALID_RESPONSE"
+
+
 def test_gate_c_rejects_outside_window_before_any_provider_request(
     tmp_path: Path,
 ) -> None:

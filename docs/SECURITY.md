@@ -54,6 +54,10 @@ bounded live run, but no live provider request has yet been made.
   reject undeclared fields with `extra="forbid"`.
 - Qwen responses must explicitly report `finish_reason="stop"`. Truncation,
   missing finish reason, or any other completion reason is terminal.
+- Provider usage evidence must be non-negative; Qwen cached input tokens must
+  not exceed reported prompt tokens. Invalid or internally inconsistent usage
+  is a sanitized terminal invalid-response error and cannot reach cost or Gate C
+  limit calculations.
 - Provider errors are mapped to sanitized codes. Response bodies and credentials
   are excluded from routine logs.
 

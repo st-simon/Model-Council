@@ -53,6 +53,15 @@ These are fail-closed implementation controls, not additional provider
 capabilities. The pinned Qwen model is recorded as supporting JSON mode with
 local validation, while provider-enforced JSON Schema remains false.
 
+On 2026-08-21, the Human Governor approved a supplemental pre-live test-hardening
+slice. It requires non-negative, internally consistent provider usage evidence;
+focused transport, finish-reason, request-ID, cache, repair, alias, envelope,
+egress-policy, and attempt-ceiling tests; and per-logical-call retry accounting.
+This does not change the frozen corpus, provider, endpoint, data class, budget,
+request ceiling, no-retry Gate C policy, execution window, or retention terms.
+The clean implementation commit SHA used for execution must be refreshed after
+this slice is committed and verified.
+
 The exact workspace-specific hostname is resolved locally from
 `DASHSCOPE_WORKSPACE_ID`. The plaintext workspace ID is not committed. Before the
 first request, the executor records the resolved endpoint hash locally and

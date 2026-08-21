@@ -170,6 +170,43 @@ def test_json_mode_probe_uses_the_gate_c_request_contract() -> None:
     assert response.raw_output == '{"status":"ok"}'
 
 
+def test_repair_preserves_request_controls_and_delimits_repair_evidence() -> None:
+    captured: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["body"] = json.loads(request.content)
+        return httpx.Response(
+            200,
+            headers={"x-request-id": "req-repair"},
+            json={
+                "model": MODEL,
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {"content": '{"summary":"repaired"}'},
+                    }
+                ],
+                "usage": {"prompt_tokens": 30, "completion_tokens": 4},
+            },
+        )
+
+    gateway, client = _gateway(httpx.MockTransport(handler))
+    try:
+        asyncio.run(gateway.repair(_request(), "{invalid", "schema mismatch"))
+    finally:
+        asyncio.run(client.aclose())
+
+    body = captured["body"]
+    assert isinstance(body, dict)
+    assert body["enable_thinking"] is False
+    assert body["stream"] is False
+    assert body["response_format"] == {"type": "json_object"}
+    user_content = body["messages"][1]["content"]
+    assert "Repair request:" in user_content
+    assert '"invalid_output": "{invalid"' in user_content
+    assert '"validation_error": "schema mismatch"' in user_content
+
+
 @pytest.mark.parametrize(
     ("status", "kind", "retryable"),
     [
@@ -198,6 +235,35 @@ def test_http_errors_are_sanitized_and_classified(
     assert "secret provider response body" not in str(caught.value)
 
 
+@pytest.mark.parametrize(
+    ("error_type", "code", "kind"),
+    [
+        (httpx.ReadTimeout, "PROVIDER_TIMEOUT", CallErrorKind.TIMEOUT),
+        (
+            httpx.ConnectError,
+            "PROVIDER_TRANSPORT_ERROR",
+            CallErrorKind.TRANSIENT,
+        ),
+    ],
+)
+def test_transport_errors_are_sanitized_and_classified(
+    error_type: type[httpx.RequestError], code: str, kind: CallErrorKind
+) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise error_type("private transport detail", request=request)
+
+    gateway, client = _gateway(httpx.MockTransport(handler))
+    try:
+        with pytest.raises(ModelCallError) as caught:
+            asyncio.run(gateway.review(_request()))
+    finally:
+        asyncio.run(client.aclose())
+
+    assert caught.value.code == code
+    assert caught.value.kind == kind
+    assert "private transport detail" not in str(caught.value)
+
+
 def test_missing_credential_fails_before_transport() -> None:
     gateway = QwenModelGateway(
         alias_to_model={ALIAS: MODEL}, base_url=BASE_URL, api_key=None
@@ -223,6 +289,29 @@ def test_json_probe_missing_credential_fails_before_transport() -> None:
                 max_output_tokens=256,
             )
         )
+
+
+def test_unknown_model_alias_fails_before_transport() -> None:
+    gateway = QwenModelGateway(
+        alias_to_model={ALIAS: MODEL}, base_url=BASE_URL, api_key="test-only-key"
+    )
+
+    with pytest.raises(ModelCallError, match="MODEL_ALIAS_UNRESOLVED") as caught:
+        asyncio.run(gateway.capabilities("unknown_alias"))
+
+    assert caught.value.kind == CallErrorKind.POLICY
+
+
+def test_missing_prompt_envelope_fails_before_transport() -> None:
+    gateway = QwenModelGateway(
+        alias_to_model={ALIAS: MODEL}, base_url=BASE_URL, api_key="test-only-key"
+    )
+    request = _request().model_copy(update={"envelope": None})
+
+    with pytest.raises(ModelCallError, match="PROMPT_ENVELOPE_REQUIRED") as caught:
+        asyncio.run(gateway.review(request))
+
+    assert caught.value.kind == CallErrorKind.POLICY
 
 
 def test_adapter_rejects_unapproved_endpoint() -> None:
@@ -298,6 +387,93 @@ def test_truncated_provider_response_is_rejected() -> None:
             asyncio.run(gateway.review(_request()))
     finally:
         asyncio.run(client.aclose())
+
+
+def test_non_stop_finish_reason_is_rejected() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "model": MODEL,
+                "choices": [
+                    {
+                        "finish_reason": "content_filter",
+                        "message": {"content": '{"summary":"blocked"}'},
+                    }
+                ],
+                "usage": {"prompt_tokens": 10, "completion_tokens": 2},
+            },
+        )
+
+    gateway, client = _gateway(httpx.MockTransport(handler))
+    try:
+        with pytest.raises(ModelCallError, match="PROVIDER_INCOMPLETE_RESPONSE"):
+            asyncio.run(gateway.review(_request()))
+    finally:
+        asyncio.run(client.aclose())
+
+
+def test_missing_finish_reason_is_invalid_response() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "model": MODEL,
+                "choices": [{"message": {"content": '{"summary":"ok"}'}}],
+                "usage": {"prompt_tokens": 10, "completion_tokens": 2},
+            },
+        )
+
+    gateway, client = _gateway(httpx.MockTransport(handler))
+    try:
+        with pytest.raises(ModelCallError, match="PROVIDER_INVALID_RESPONSE"):
+            asyncio.run(gateway.review(_request()))
+    finally:
+        asyncio.run(client.aclose())
+
+
+@pytest.mark.parametrize(
+    "usage",
+    [
+        {"prompt_tokens": -1, "completion_tokens": 2},
+        {"prompt_tokens": 10, "completion_tokens": -1},
+        {
+            "prompt_tokens": 10,
+            "completion_tokens": 2,
+            "prompt_tokens_details": {"cached_tokens": -1},
+        },
+        {
+            "prompt_tokens": 10,
+            "completion_tokens": 2,
+            "prompt_tokens_details": {"cached_tokens": 11},
+        },
+    ],
+)
+def test_invalid_usage_evidence_is_rejected(usage: dict[str, object]) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "model": MODEL,
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {"content": '{"summary":"ok"}'},
+                    }
+                ],
+                "usage": usage,
+            },
+        )
+
+    gateway, client = _gateway(httpx.MockTransport(handler))
+    try:
+        with pytest.raises(ModelCallError) as caught:
+            asyncio.run(gateway.review(_request()))
+    finally:
+        asyncio.run(client.aclose())
+
+    assert caught.value.code == "PROVIDER_INVALID_RESPONSE"
+    assert caught.value.kind == CallErrorKind.INVALID_RESPONSE
 
 
 def test_review_output_forbids_unapproved_fields() -> None:

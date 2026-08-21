@@ -221,13 +221,13 @@ class GatewayResponse(BaseModel):
     raw_output: str
     provider: str
     actual_model_id: str
-    input_tokens: int
-    uncached_input_tokens: int | None = None
-    cache_creation_input_tokens: int | None = None
-    cache_read_input_tokens: int | None = None
-    output_tokens: int
-    latency_ms: int
-    cost_rmb: float | None = None
+    input_tokens: int = Field(ge=0)
+    uncached_input_tokens: int | None = Field(default=None, ge=0)
+    cache_creation_input_tokens: int | None = Field(default=None, ge=0)
+    cache_read_input_tokens: int | None = Field(default=None, ge=0)
+    output_tokens: int = Field(ge=0)
+    latency_ms: int = Field(ge=0)
+    cost_rmb: float | None = Field(default=None, ge=0)
     provider_request_id: str | None = None
     pricing_snapshot_id: str | None = None
 
