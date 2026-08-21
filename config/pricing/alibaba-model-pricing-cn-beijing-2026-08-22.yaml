@@ -1,0 +1,15 @@
+pricing_snapshot:
+  id: alibaba-model-pricing-cn-beijing-2026-08-22
+  provider: qwen_model_studio
+  model: qwen3.7-max-2026-05-20
+  region: cn-beijing
+  deployment_scope: Global
+  source_url: https://help.aliyun.com/zh/model-studio/model-pricing
+  retrieved_at: 2026-08-22
+  currency: CNY
+  unit_tokens: 1000000
+  input_list_price: 12.0
+  output_list_price: 36.0
+  promotions_included: false
+  prompt_cache_enabled_by_policy: false
+  note: Approved Gate C ceilings produce a maximum list-price estimate of CNY 0.109728.

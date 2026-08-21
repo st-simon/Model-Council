@@ -39,7 +39,7 @@ app = typer.Typer(no_args_is_help=True)
 SAFE_WORKSPACE_ID = re.compile(r"^[A-Za-z0-9-]{1,100}$")
 FULL_COMMIT_SHA = re.compile(r"^[0-9a-f]{40}$")
 GATE_C_ENDPOINT_TEMPLATE = (
-    "https://{workspace_id}.ap-northeast-1.maas.aliyuncs.com/compatible-mode/v1"
+    "https://{workspace_id}.cn-beijing.maas.aliyuncs.com/compatible-mode/v1"
 )
 
 
@@ -190,7 +190,7 @@ def _gate_c_config_preflight(config_dir: Path) -> tuple[str, str]:
     if (
         provider.network_enabled
         or provider.allowed_data_classes != ["PUBLIC"]
-        or provider.region != "ap-northeast-1"
+        or provider.region != "cn-beijing"
         or provider.endpoint_template != GATE_C_ENDPOINT_TEMPLATE
         or provider.credential_env != "DASHSCOPE_API_KEY"
         or provider.workspace_id_env != "DASHSCOPE_WORKSPACE_ID"
@@ -220,7 +220,7 @@ def gate_c_qwen(
         Path, typer.Option(exists=True, file_okay=False, readable=True)
     ] = Path("config"),
 ) -> None:
-    """Execute the approved, two-request Qwen Tokyo Gate C run."""
+    """Execute the approved, two-request Qwen Beijing Gate C run."""
     now = datetime.now(UTC)
     confirmations = (
         confirm_key_scoped

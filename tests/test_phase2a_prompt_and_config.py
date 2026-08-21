@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+import yaml
 from pydantic import ValidationError
 
 from model_council.configuration import load_runtime_config
@@ -64,12 +65,27 @@ def test_gate_b_qwen_policy_remains_offline_and_public_only() -> None:
         "usage_reporting": True,
         "request_id_reporting": True,
     }
-    assert provider.region == "ap-northeast-1"
+    assert provider.region == "cn-beijing"
     assert provider.allowed_data_classes == ["PUBLIC"]
     assert provider.network_enabled is False
     assert provider.payload_retention == "unknown"
     assert provider.inference_logging_enabled is False
     assert provider.prompt_cache_enabled is False
+
+
+def test_beijing_pricing_snapshot_uses_native_rmb_list_prices() -> None:
+    snapshot_path = Path(
+        "config/pricing/alibaba-model-pricing-cn-beijing-2026-08-22.yaml"
+    )
+    snapshot = yaml.safe_load(snapshot_path.read_text(encoding="utf-8"))[
+        "pricing_snapshot"
+    ]
+
+    assert snapshot["id"] == "alibaba-model-pricing-cn-beijing-2026-08-22"
+    assert snapshot["region"] == "cn-beijing"
+    assert snapshot["currency"] == "CNY"
+    assert snapshot["input_list_price"] == 12.0
+    assert snapshot["output_list_price"] == 36.0
 
 
 def test_radical_challenge_requires_falsification_fields() -> None:

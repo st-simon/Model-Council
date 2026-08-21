@@ -43,13 +43,15 @@ bounded live run, but no live provider request has yet been made.
 
 ## Enforced Phase 2B model boundary
 
-- The only provider adapter is Alibaba Cloud Model Studio / Qwen through the
-  workspace-specific Tokyo HTTPS endpoint and direct HTTPX transport.
+- The only provider adapter is Alibaba Cloud China Model Studio / Qwen through
+  the workspace-specific Beijing (`cn-beijing`) HTTPS endpoint and direct HTTPX
+  transport. Tokyo and generic DashScope endpoints are rejected.
 - Business logic uses `architect_primary_v1`; the adapter resolves it to the
   approved `qwen3.7-max-2026-05-20` physical model.
 - Capability declarations distinguish JSON mode, provider-enforced JSON Schema,
-  and local schema validation. The approved model claims JSON mode plus strict
-  local validation, not provider-enforced JSON Schema.
+  and local schema validation. Beijing capability evidence records JSON Schema
+  support, while the approved Gate C behavior remains JSON Object plus strict
+  local validation.
 - Provider-originated JSON output models use strict Pydantic validation and
   reject undeclared fields with `extra="forbid"`.
 - Qwen responses must explicitly report `finish_reason="stop"`. Truncation,
@@ -63,7 +65,7 @@ bounded live run, but no live provider request has yet been made.
 
 ## Approved Gate C execution boundary
 
-- Authorization `20260821-gate-c-qwen-live-verification` permits only the frozen
+- Authorization `20260822-gate-c-qwen-beijing-live-verification` permits only the frozen
   synthetic `PUBLIC` corpus and hashes recorded in the authorization packet.
 - Execution is isolated in `council gate-c-qwen`; the general review command
   remains fixture-backed and checked-in provider policy remains
@@ -73,7 +75,9 @@ bounded live run, but no live provider request has yet been made.
   open authorization window, a clean worktree, and an exact approved full commit
   SHA before it reads environment credentials.
 - Credentials are accepted only from `DASHSCOPE_API_KEY` and
-  `DASHSCOPE_WORKSPACE_ID`. Their values are not persisted or printed.
+  `DASHSCOPE_WORKSPACE_ID`. They must belong to the Alibaba Cloud China
+  (`aliyun.com`) Model Studio Beijing workspace; their values are not persisted
+  or printed.
 - The runner reserves the full RMB 0.20 ceiling before egress. It permits one
   256-token JSON probe followed conditionally by one 1,792-token review: at most
   two physical requests, one attempt each, no repair, and no retry.
@@ -106,8 +110,10 @@ bounded live run, but no live provider request has yet been made.
 
 ## Gate C status
 
-The Human Governor approved Gate C and the three supplementary model-risk
-controls on 2026-08-21. The runner is implemented and mock-tested offline. Live
+The Human Governor superseded the unused Tokyo authorization and approved the
+Beijing `cn-beijing` replacement on 2026-08-22; all other Gate C limits and the
+three supplementary model-risk controls remain in force. The runner is
+implemented and mock-tested offline. Live
 execution must not begin before 2026-08-22 09:00 JST or after 2026-08-28 21:00
 JST, and it must originate from a clean implementation commit separately named
 to the command. Scanner, console, credential, policy, or evidence uncertainty

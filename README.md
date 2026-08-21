@@ -6,8 +6,8 @@ findings are normalized and reconciled, and Codex remains the only repository
 write actor. High-impact unresolved decisions are escalated to the human
 governor.
 
-Status: **Phase 1 verified; Gate C approved and guarded runner verified offline;
-no live provider request has been made**.
+Status: **Phase 1 verified; Beijing Gate C migration approved and implemented
+offline; no live provider request has been made**.
 
 Blueprint provenance: `MODEL_COUNCIL_BLUEPRINT_v0.2.md`, 1,833 lines,
 SHA-256 `fba10c921eeaf0e6bce18b5b123294352e0748ceff880b53646362925cb8c7b5`.
@@ -23,13 +23,15 @@ raw council report. Phase 1 proves this end to end with deterministic fixture
 reviewers. Phase 2A adds provider-neutral prompt envelopes, offline capability
 verification, fail-closed egress policy, physical call attempts, retry recovery,
 cache-aware usage fields, and atomic budget reservations without making a real
-provider call. Phase 2B adds one Qwen Model Studio adapter for the Tokyo region,
-with mock-transport contract tests and an offline capability declaration. It is
+provider call. Phase 2B adds one Qwen Model Studio adapter for the Alibaba Cloud
+China Model Studio Beijing region (`cn-beijing`), with mock-transport contract
+tests and an offline capability declaration. It is
 not wired into the general review command. Gate C adds a separate, fail-closed
 two-request runner for the frozen synthetic public corpus. Checked-in provider
 policy remains network-disabled; live execution requires the exact approval ID,
 a clean approved commit, the authorized window, console confirmations, and
-ephemeral environment credentials.
+ephemeral environment credentials. The allowlist accepts only the Beijing
+workspace endpoint and rejects Tokyo or generic DashScope endpoints.
 
 ## Baseline and stack
 
@@ -53,7 +55,8 @@ model slugs have not been inspected or configured.
 - [Implementation plan](IMPLEMENTATION_PLAN_v0.2.md)
 - [Verified Phase 1 proposal](proposals/archive/20260818-model-council-mvp0.md)
 - [Active Phase 2 proposal](proposals/active/20260821-phase-2-provider-verification.md)
-- [Approved Gate C authorization](proposals/active/20260821-gate-c-qwen-live-verification.md)
+- [Approved Beijing Gate C authorization](proposals/active/20260822-gate-c-qwen-beijing-live-verification.md)
+- [Superseded Tokyo Gate C authorization](proposals/active/20260821-gate-c-qwen-live-verification.md)
 - [Security boundary](docs/SECURITY.md)
 - [Decisions](DECISIONS.md)
 - [Tasks](TASKS.md)
@@ -91,7 +94,7 @@ uv run council gate-c-qwen \
   --corpus tests/fixtures/gate_c_qwen_public_corpus.json \
   --config-dir config \
   --approved-commit <40-character-approved-commit> \
-  --authorization-id 20260821-gate-c-qwen-live-verification \
+  --authorization-id 20260822-gate-c-qwen-beijing-live-verification \
   --confirm-key-scoped \
   --confirm-inference-logging-disabled \
   --confirm-billing-access \
@@ -99,8 +102,10 @@ uv run council gate-c-qwen \
   --execute
 ```
 
-Set `DASHSCOPE_API_KEY` and `DASHSCOPE_WORKSPACE_ID` locally; never paste or
-commit them. The command checks authorization, time, confirmations, the exact
+Create the dedicated key and workspace in Alibaba Cloud China (`aliyun.com`)
+Model Studio Beijing, then set `DASHSCOPE_API_KEY` and
+`DASHSCOPE_WORKSPACE_ID` locally; never paste or commit them. The command checks
+authorization, time, confirmations, the exact
 commit, and a clean worktree before reading either variable. It then permits at
 most one JSON-mode probe and, conditionally, one review with no retry. Revoke or
 delete the dedicated key immediately after evidence reconciliation.
@@ -117,7 +122,7 @@ uv run pytest -q
 The CLI requires an explicit `--home`; local examples use `.model-council/`,
 which is ignored. The checked-in Qwen provider policy allows only `PUBLIC` data
 and has `network_enabled: false`. `verify-models` does not read credentials or
-make provider calls. The Gate C runner uses an ephemeral in-memory allow policy;
-it does not change the checked-in default. As of 2026-08-21, implementation and
-offline verification are complete, but the authorized window has not opened and
-no credential or live provider call has been used.
+make provider calls. The Gate C runner uses an ephemeral Beijing-only in-memory
+allow policy; it does not change the checked-in default. As of 2026-08-22, the
+Beijing migration is implemented offline; no credential has been read and no
+live provider call has been made.

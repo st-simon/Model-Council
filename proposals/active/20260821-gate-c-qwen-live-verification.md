@@ -1,9 +1,11 @@
 # Gate C — Qwen Tokyo Guarded Live Verification Authorization
 
 - Authorization ID: `20260821-gate-c-qwen-live-verification`
-- Status: `approved` (implementation ready offline; live requests not yet started)
+- Status: `superseded` (no live request was made)
+- Superseded by: `20260822-gate-c-qwen-beijing-live-verification`
 - Date prepared: 2026-08-21
 - Date approved: 2026-08-21 by Human Governor
+- Date superseded: 2026-08-22 by Human Governor decision to use `cn-beijing`
 - Parent proposal: `20260821-phase-2-provider-verification`
 - Decision owner: Human Governor
 - Executor after approval: Codex

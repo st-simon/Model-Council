@@ -32,7 +32,9 @@ M2 — Provider verification and guarded live review. The independent proposal
 Phase 2A offline provider-readiness was verified on 2026-08-21. Gate B was
 approved on 2026-08-21 and the Qwen adapter was verified against mock transport.
 Gate C and its three supplementary model-risk controls were approved on
-2026-08-21. The guarded runner is implemented offline; do not execute it outside
+2026-08-21. The unused Tokyo authorization was superseded on 2026-08-22 by an
+approved Alibaba Cloud China Model Studio Beijing (`cn-beijing`) authorization.
+The guarded runner is implemented offline; do not execute it outside
 the exact commit, console, credential, window, corpus, and limit conditions.
 
 - [x] Split role, logical-model, provider, and prompt configuration.
@@ -43,7 +45,8 @@ the exact commit, console, credential, window, corpus, and limit conditions.
 - [x] Add offline `verify-models` capability verification.
 - [x] Add cache-aware usage fields and atomic soft/hard budget foundations.
 - [x] Add migration, contract, recovery, security, budget, and CLI tests.
-- [x] Record the Gate B Qwen/Tokyo/PUBLIC-only provider policy.
+- [x] Record the Gate B Qwen/PUBLIC-only provider policy and its approved
+  Beijing replacement.
 - [x] Add and lock HTTPX as the reviewed direct transport.
 - [x] Implement the Qwen adapter with sanitized error classification.
 - [x] Verify the approved alias and capabilities without network or credentials.
@@ -54,7 +57,7 @@ the exact commit, console, credential, window, corpus, and limit conditions.
 
 - Synthetic public corpus and exact permitted material
 - Execution window and no-retry policy
-- Maximum requests, attempts, tokens, USD spend, and RMB hard budget
+- Maximum requests, attempts, tokens, planning ceiling, and RMB hard budget
 - Credential and provider-console prerequisites
 - Local evidence retention and Human Governor deletion ownership
 
@@ -65,8 +68,10 @@ the exact commit, console, credential, window, corpus, and limit conditions.
 - [x] Define exact request, attempt, token, time, and spend ceilings.
 - [x] Define endpoint, credential, console, stop, and retention conditions.
 - [x] Add an offline corpus integrity and egress-scan test.
+- [x] Preserve the unused Tokyo authorization as superseded.
 - [x] Human Governor approval of
-  `20260821-gate-c-qwen-live-verification`.
+  `20260822-gate-c-qwen-beijing-live-verification`.
+- [x] Restrict the adapter and guarded runner to `cn-beijing` and reject Tokyo.
 - [x] Split JSON-mode, schema-enforcement, and local-validation capabilities.
 - [x] Reject provider output extras and non-stop `finish_reason` values.
 - [x] Implement and mock-test the two-request Gate C runner.

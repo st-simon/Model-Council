@@ -16,8 +16,8 @@ from model_council.models import (
 )
 
 PROVIDER = "qwen_model_studio"
-PRICING_SNAPSHOT_ID = "alibaba-model-pricing-2026-07-15"
-TOKYO_HOST_SUFFIX = ".ap-northeast-1.maas.aliyuncs.com"
+PRICING_SNAPSHOT_ID = "alibaba-model-pricing-cn-beijing-2026-08-22"
+BEIJING_HOST_SUFFIX = ".cn-beijing.maas.aliyuncs.com"
 SAFE_REQUEST_ID = re.compile(r"^[A-Za-z0-9._:-]{1,200}$")
 
 
@@ -30,19 +30,19 @@ class QwenModelGateway:
         alias_to_model: dict[str, str],
         base_url: str,
         api_key: str | None,
-        region: str = "ap-northeast-1",
+        region: str = "cn-beijing",
         client: httpx.AsyncClient | None = None,
     ) -> None:
         parsed_url = httpx.URL(base_url)
         if (
             parsed_url.scheme != "https"
             or parsed_url.host is None
-            or not parsed_url.host.endswith(TOKYO_HOST_SUFFIX)
+            or not parsed_url.host.endswith(BEIJING_HOST_SUFFIX)
             or parsed_url.path.rstrip("/") != "/compatible-mode/v1"
             or parsed_url.query
-            or region != "ap-northeast-1"
+            or region != "cn-beijing"
         ):
-            raise ValueError("base URL must be the approved Tokyo workspace endpoint")
+            raise ValueError("base URL must be the approved Beijing workspace endpoint")
         self._alias_to_model = alias_to_model
         self._base_url = base_url.rstrip("/")
         self._api_key = api_key
@@ -55,7 +55,7 @@ class QwenModelGateway:
             model_alias=model_alias,
             actual_model_id=self._resolve_model(model_alias),
             json_mode=True,
-            json_schema_enforced=False,
+            json_schema_enforced=True,
             local_schema_validation=True,
             prompt_cache=False,
             usage_reporting=True,

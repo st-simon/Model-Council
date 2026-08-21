@@ -16,7 +16,7 @@ from model_council.models import CallStatus, RunState
 
 ALIAS = "architect_primary_v1"
 MODEL = "qwen3.7-max-2026-05-20"
-BASE_URL = "https://workspace.ap-northeast-1.maas.aliyuncs.com/compatible-mode/v1"
+BASE_URL = "https://workspace.cn-beijing.maas.aliyuncs.com/compatible-mode/v1"
 CORPUS = Path("tests/fixtures/gate_c_qwen_public_corpus.json")
 IN_WINDOW = datetime(2026, 8, 22, 1, 0, tzinfo=UTC)
 
@@ -98,9 +98,10 @@ def test_gate_c_runs_probe_then_review_once_and_persists_evidence(
         asyncio.run(client.aclose())
 
     assert result.state == RunState.COMPLETED
+    assert result.authorization_id == "20260822-gate-c-qwen-beijing-live-verification"
     assert result.physical_requests == 2
     assert result.input_tokens == 100
-    assert 0 < result.cost_rmb <= 0.20
+    assert result.cost_rmb == pytest.approx(0.00156)
     assert result.report_path.exists()
     assert len(bodies) == 2
     assert bodies[0]["max_completion_tokens"] == 256
@@ -131,8 +132,8 @@ def test_gate_c_stops_after_invalid_probe_without_review(tmp_path: Path) -> None
         asyncio.run(client.aclose())
 
     assert requests == 1
-    assert store.load_state("R-GATE-C-QWEN-001") == RunState.FAILED
-    calls = store.list_calls("R-GATE-C-QWEN-001")
+    assert store.load_state("R-GATE-C-QWEN-BEIJING-001") == RunState.FAILED
+    calls = store.list_calls("R-GATE-C-QWEN-BEIJING-001")
     assert len(calls) == 1
     assert calls[0].status == CallStatus.INVALID
 
@@ -150,7 +151,7 @@ def test_gate_c_rejects_model_mismatch_as_invalid(tmp_path: Path) -> None:
     finally:
         asyncio.run(client.aclose())
 
-    calls = store.list_calls("R-GATE-C-QWEN-001")
+    calls = store.list_calls("R-GATE-C-QWEN-BEIJING-001")
     assert calls[0].status == CallStatus.INVALID
     assert calls[0].error_code == "ACTUAL_MODEL_ID_MISMATCH"
 
@@ -196,7 +197,7 @@ def test_gate_c_rejects_missing_evidence_or_observed_cache(
     finally:
         asyncio.run(client.aclose())
 
-    calls = store.list_calls("R-GATE-C-QWEN-001")
+    calls = store.list_calls("R-GATE-C-QWEN-BEIJING-001")
     assert len(calls) == 1
     assert calls[0].status == CallStatus.INVALID
     assert calls[0].error_code == error_code
@@ -222,8 +223,8 @@ def test_gate_c_stops_after_invalid_provider_usage(tmp_path: Path) -> None:
         asyncio.run(client.aclose())
 
     assert requests == 1
-    assert store.load_state("R-GATE-C-QWEN-001") == RunState.FAILED
-    calls = store.list_calls("R-GATE-C-QWEN-001")
+    assert store.load_state("R-GATE-C-QWEN-BEIJING-001") == RunState.FAILED
+    calls = store.list_calls("R-GATE-C-QWEN-BEIJING-001")
     assert len(calls) == 1
     assert calls[0].status == CallStatus.FAILED_TERMINAL
     assert calls[0].error_code == "PROVIDER_INVALID_RESPONSE"

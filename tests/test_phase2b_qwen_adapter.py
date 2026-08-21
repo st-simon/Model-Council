@@ -20,7 +20,7 @@ from model_council.models import (
 
 ALIAS = "architect_primary_v1"
 MODEL = "qwen3.7-max-2026-05-20"
-BASE_URL = "https://workspace.ap-northeast-1.maas.aliyuncs.com/compatible-mode/v1"
+BASE_URL = "https://workspace.cn-beijing.maas.aliyuncs.com/compatible-mode/v1"
 
 
 def _request() -> GatewayRequest:
@@ -30,7 +30,7 @@ def _request() -> GatewayRequest:
         dynamic_payload="Review the proposal.",
         policy_metadata=PolicyMetadata(
             data_class="PUBLIC",
-            provider_policy_version="qwen-tokyo-public-v1",
+            provider_policy_version="qwen-beijing-public-v1",
             prompt_version="architect-v1",
         ),
     )
@@ -70,11 +70,11 @@ def test_capabilities_are_declared_without_a_network_call() -> None:
 
     assert result.actual_model_id == MODEL
     assert result.json_mode is True
-    assert result.json_schema_enforced is False
+    assert result.json_schema_enforced is True
     assert result.local_schema_validation is True
     assert result.usage_reporting is True
     assert result.request_id_reporting is True
-    assert result.region == "ap-northeast-1"
+    assert result.region == "cn-beijing"
     assert result.network_call_performed is False
 
 
@@ -315,10 +315,10 @@ def test_missing_prompt_envelope_fails_before_transport() -> None:
 
 
 def test_adapter_rejects_unapproved_endpoint() -> None:
-    with pytest.raises(ValueError, match="approved Tokyo"):
+    with pytest.raises(ValueError, match="approved Beijing"):
         QwenModelGateway(
             alias_to_model={ALIAS: MODEL},
-            base_url="https://example.com/compatible-mode/v1",
+            base_url="https://workspace.ap-northeast-1.maas.aliyuncs.com/compatible-mode/v1",
             api_key=None,
         )
 

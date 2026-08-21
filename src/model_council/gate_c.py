@@ -28,12 +28,12 @@ from model_council.models import (
 )
 from model_council.ports import ArtifactStore, RunStore
 
-AUTHORIZATION_ID = "20260821-gate-c-qwen-live-verification"
-CORPUS_SHA256 = "5733080e2e3453bfa4520be507309529774acee9bacc1ccfeff967a0c6b10bad"
-ENVELOPE_SHA256 = "5d559b9159da3e6943a872e72cea6feff10cfa2800b9cf54e4d555ded5165734"
+AUTHORIZATION_ID = "20260822-gate-c-qwen-beijing-live-verification"
+CORPUS_SHA256 = "b75768802f6ae6a93829cdd035e5a8f1ace2294bc2400902d4944029ec32c9a0"
+ENVELOPE_SHA256 = "7eb5638022bff718f1f9f70b59197c54dcdfb708178336f738f330de7524ee15"
 MODEL_ALIAS = "architect_primary_v1"
 MODEL_ID = "qwen3.7-max-2026-05-20"
-POLICY_VERSION = "qwen-tokyo-public-v1"
+POLICY_VERSION = "qwen-beijing-public-v1"
 WINDOW_START = datetime(2026, 8, 22, 0, 0, tzinfo=UTC)  # 09:00 JST
 WINDOW_END = datetime(2026, 8, 28, 12, 0, tzinfo=UTC)  # 21:00 JST
 INPUT_TOKEN_LIMIT = 3_000
@@ -43,9 +43,8 @@ PROBE_OUTPUT_LIMIT = 256
 REVIEW_OUTPUT_LIMIT = 1_792
 WALL_CLOCK_LIMIT_SECONDS = 600.0
 HARD_BUDGET_RMB = 0.20
-INPUT_USD_PER_MILLION = 1.65
-OUTPUT_USD_PER_MILLION = 4.951
-RMB_PER_USD_CEILING = 10.0
+INPUT_RMB_PER_MILLION = 12.0
+OUTPUT_RMB_PER_MILLION = 36.0
 
 
 class GateCStopped(RuntimeError):
@@ -85,7 +84,7 @@ def gate_c_policy() -> ProviderConfig:
     return ProviderConfig(
         network_enabled=True,
         allowed_data_classes=["PUBLIC"],
-        region="ap-northeast-1",
+        region="cn-beijing",
         training_use="provider_states_not_used_for_training",
         payload_retention="unknown",
         inference_logging_enabled=False,
@@ -150,9 +149,9 @@ class GateCRunner:
         started = monotonic()
         corpus = load_gate_c_corpus(corpus_path, self.guard)
         self._check_window()
-        run_id = "R-GATE-C-QWEN-001"
+        run_id = "R-GATE-C-QWEN-BEIJING-001"
         review_input = ReviewInput(
-            project_id="gate-c-qwen-public",
+            project_id="gate-c-qwen-beijing-public",
             run_id=run_id,
             proposal=corpus.review_envelope.dynamic_payload,
             context=corpus.review_envelope.project_context,
@@ -426,8 +425,7 @@ class GateCRunner:
 
     @staticmethod
     def _cost_rmb(response: GatewayResponse) -> float:
-        cost_usd = (
-            response.input_tokens * INPUT_USD_PER_MILLION
-            + response.output_tokens * OUTPUT_USD_PER_MILLION
+        return (
+            response.input_tokens * INPUT_RMB_PER_MILLION
+            + response.output_tokens * OUTPUT_RMB_PER_MILLION
         ) / 1_000_000
-        return cost_usd * RMB_PER_USD_CEILING

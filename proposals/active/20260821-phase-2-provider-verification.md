@@ -6,6 +6,7 @@
 - Gate A approved: 2026-08-21 by Human Governor
 - Gate B approved: 2026-08-21 by Human Governor
 - Gate C approved: 2026-08-21 by Human Governor
+- Gate C Beijing replacement approved: 2026-08-22 by Human Governor
 - Owner: Codex (Coordinator / Architect / Builder after approval)
 - Human governor: user
 - Depends on: verified Phase 1 proposal `20260818-model-council-mvp0`
@@ -465,8 +466,8 @@ Phase 2 is `verified` only when:
 
 ## State transition plan
 
-- Current: `implemented` — Gate C approved and guarded execution implemented
-  offline; live verification has not started
+- Current: `implemented` — Beijing Gate C replacement approved and guarded
+  execution implemented offline; live verification has not started
 - Gate A approval recorded on 2026-08-21
 - Gate B approval recorded on 2026-08-21
 - When Phase 2A implementation starts: `in_progress`
@@ -526,6 +527,16 @@ false`; no credential was read and no external model request was made.
 The proposal is `implemented` but not `verified`; Gate C live evidence remains
 pending.
 
+### Beijing replacement record
+
+On 2026-08-22 the Human Governor superseded the unused Tokyo provider boundary
+with Alibaba Cloud China Model Studio Beijing (`cn-beijing`) while preserving
+the model, synthetic public workload, call and token ceilings, zero retries,
+RMB 0.20 hard budget, execution window, and retention rules. The replacement
+authorization is
+`proposals/active/20260822-gate-c-qwen-beijing-live-verification.md`. The Tokyo
+packet remains an audit record and cannot authorize a request.
+
 ## Gate C preparation record
 
 An independent Gate C authorization packet was prepared on 2026-08-21 at
@@ -533,7 +544,8 @@ An independent Gate C authorization packet was prepared on 2026-08-21 at
 synthetic PUBLIC corpus and exact envelope hashes, limits the run to one JSON
 capability probe followed conditionally by one review, forbids retries, and sets
 explicit token, spend, time, stop, credential, and retention boundaries. Its
-status is `approved`. The Human Governor also approved capability-field
+Tokyo status is now `superseded`; the Beijing replacement is `approved`. The
+Human Governor also approved capability-field
 splitting, strict provider-output models with `extra="forbid"`, and terminal
 `finish_reason` checks as implementation prerequisites. The guarded runner and
 offline tests are implemented; no credential has been read and no live provider
@@ -581,8 +593,9 @@ preconditions.
 
 ## Approval request
 
-**Gate A, Gate B, and Gate C were approved on 2026-08-21.** Phase 2A, the
-offline Phase 2B Qwen adapter, and the guarded Gate C runner are implemented.
-Gate C live execution is authorized only under the independent packet's exact
+**Gate A and Gate B were approved on 2026-08-21; the Gate C Beijing replacement
+was approved on 2026-08-22.** Phase 2A, the offline Phase 2B Qwen adapter, and
+the guarded Gate C runner are implemented. Gate C live execution is authorized
+only under the Beijing packet's exact
 corpus, commit, endpoint, limits, budget, time window, console confirmations,
 and stop conditions. No live request has yet been made.

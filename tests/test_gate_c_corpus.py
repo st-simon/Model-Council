@@ -9,8 +9,8 @@ from model_council.egress import EgressGuard
 from model_council.models import PromptEnvelope
 
 CORPUS_PATH = Path("tests/fixtures/gate_c_qwen_public_corpus.json")
-CORPUS_SHA256 = "5733080e2e3453bfa4520be507309529774acee9bacc1ccfeff967a0c6b10bad"
-ENVELOPE_SHA256 = "5d559b9159da3e6943a872e72cea6feff10cfa2800b9cf54e4d555ded5165734"
+CORPUS_SHA256 = "b75768802f6ae6a93829cdd035e5a8f1ace2294bc2400902d4944029ec32c9a0"
+ENVELOPE_SHA256 = "7eb5638022bff718f1f9f70b59197c54dcdfb708178336f738f330de7524ee15"
 
 
 def test_gate_c_public_corpus_is_frozen_and_passes_egress_scan() -> None:

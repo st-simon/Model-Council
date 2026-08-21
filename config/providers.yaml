@@ -8,8 +8,8 @@ providers:
     network_enabled: false
     allowed_data_classes:
       - PUBLIC
-    region: ap-northeast-1
-    endpoint_template: https://{workspace_id}.ap-northeast-1.maas.aliyuncs.com/compatible-mode/v1
+    region: cn-beijing
+    endpoint_template: https://{workspace_id}.cn-beijing.maas.aliyuncs.com/compatible-mode/v1
     credential_env: DASHSCOPE_API_KEY
     workspace_id_env: DASHSCOPE_WORKSPACE_ID
     training_use: provider_states_not_used_for_training

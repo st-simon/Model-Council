@@ -74,7 +74,7 @@
 
 ## D-009 — First provider adapter and Gate B boundary
 
-- Status: accepted under Phase 2 Gate B on 2026-08-21
+- Status: superseded on 2026-08-22 by D-010; retained as the Gate B audit record
 - Decision: implement one direct HTTPX adapter for Alibaba Cloud Model Studio in
   the Tokyo region. Map logical alias `architect_primary_v1` to pinned model
   `qwen3.7-max-2026-05-20`; permit only `PUBLIC` egress; keep provider inference
@@ -90,3 +90,23 @@
 - Gate boundary: Gate B authorizes offline adapter implementation and mock
   verification only. Credentials, network enablement, content egress, and billed
   calls still require Gate C.
+
+## D-010 — Replace the unused Tokyo boundary with Beijing
+
+- Status: accepted by the Human Governor on 2026-08-22
+- Decision: retain the direct HTTPX adapter, alias
+  `architect_primary_v1`, pinned model `qwen3.7-max-2026-05-20`, synthetic
+  `PUBLIC` corpus, two-request/no-retry limit, and RMB 0.20 hard budget; replace
+  only the provider location with Alibaba Cloud China (`aliyun.com`) Model
+  Studio Beijing, region `cn-beijing`.
+- Endpoint boundary: accept only workspace hosts ending in
+  `.cn-beijing.maas.aliyuncs.com` with the approved compatible-mode path. Reject
+  Tokyo, international, generic DashScope, query-bearing, and alternate hosts.
+- Credential boundary: use only a dedicated Beijing workspace key and ID through
+  the existing environment-variable inputs. No credential may be read before
+  the guarded live preflight passes.
+- Capability boundary: declare Beijing JSON Schema support separately, while
+  keeping Gate C request behavior at JSON Object plus strict local Pydantic
+  validation.
+- Reason: the available account must use the China-site Beijing service; a
+  single-region allowlist minimizes accidental cross-region egress.
