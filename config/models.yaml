@@ -1,0 +1,21 @@
+models:
+  fixture_qwen:
+    provider: fixture
+    model: fixture-qwen-v1
+    required_capabilities:
+      structured_output: true
+  fixture_kimi:
+    provider: fixture
+    model: fixture-kimi-v1
+    required_capabilities:
+      structured_output: true
+  fixture_grok:
+    provider: fixture
+    model: fixture-grok-v1
+    required_capabilities:
+      structured_output: true
+  fixture_glm:
+    provider: fixture
+    model: fixture-glm-v1
+    required_capabilities:
+      structured_output: true

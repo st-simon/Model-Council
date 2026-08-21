@@ -1,7 +1,8 @@
 # Model Council Implementation Plan v0.2
 
-Status: Phase 1 verified on 2026-08-18. Real provider calls, credentials, and
-source-code egress remain outside this approval.
+Status: Phase 1 verified on 2026-08-18. Phase 2A offline provider-readiness was
+verified on 2026-08-21. Real provider calls, credentials, provider dependencies,
+and source-code egress remain outside Gate A approval.
 
 ## Delivery strategy
 
@@ -50,6 +51,12 @@ Deliverables:
 
 Entry gate: human approval of the provider/data matrix, credential mechanism,
 budget, and first low-risk test corpus.
+
+Phase 2A verification record (2026-08-21): configuration/prompt separation,
+versioned prompt envelopes, logical-call/physical-attempt persistence,
+retry-aware resume, fail-closed egress scanning, offline capability probes,
+cache-aware usage fields, and atomic budget reservation are implemented with no
+network or provider dependency. Phase 2B/C remain gated by the approved proposal.
 
 ## Phase 3 — Governance and finding lifecycle
 

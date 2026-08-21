@@ -48,6 +48,21 @@ Verification status: **all criteria passed on 2026-08-18**.
 7. Tests cover success, isolation, partial failure, schema failure,
    idempotency, and resume.
 
+## Phase 2A acceptance criteria
+
+Verification status: **all offline criteria passed on 2026-08-21**.
+
+1. Roles, logical aliases, providers, and prompt versions are independently
+   configured without a provider slug in business logic.
+2. Fixture reviews use a canonical, versioned, section-hashed prompt envelope.
+3. Logical calls and physical review/repair attempts are separately persisted.
+4. Resume preserves ambiguous interruptions and retries only eligible failures.
+5. Egress policy fails closed before delegation for policy, secret, PII,
+   injection, or scanner uncertainty.
+6. `verify-models` validates all fixture aliases without network access.
+7. Cache usage remains separated and unknown values are not coerced to zero.
+8. Concurrent calls cannot over-reserve a hard run budget.
+
 ## Top constraints
 
 1. Privacy and governance correctness
@@ -59,6 +74,8 @@ Verification status: **all criteria passed on 2026-08-18**.
 ## Explicitly deferred
 
 - real provider calls and verified model slugs;
+- provider SDKs, credentials, network capability probes, and live retention or
+  pricing verification;
 - semantic deduplication, embedding retrieval, debate, appeal, and escalation;
 - Codex implementation automation against a target repository;
 - scorecards, baseline experiments, shadow mode, dashboard, MCP, GitHub, and

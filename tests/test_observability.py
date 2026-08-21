@@ -43,7 +43,7 @@ def test_call_log_is_structured_and_excludes_prompt_content(tmp_path: Path) -> N
     assert secret_sentinel not in log_path.read_text(encoding="utf-8")
     stored_call = run_store.list_calls(request.run_id)[0]
     assert stored_call.provider == "fixture"
-    assert stored_call.actual_model_id == "fixture_qwen"
+    assert stored_call.actual_model_id == "fixture-qwen-v1"
     assert stored_call.input_tokens is not None and stored_call.input_tokens > 0
     assert stored_call.output_tokens is not None and stored_call.output_tokens > 0
     assert stored_call.cost_rmb == 0.0

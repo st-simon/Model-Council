@@ -6,7 +6,7 @@ findings are normalized and reconciled, and Codex remains the only repository
 write actor. High-impact unresolved decisions are escalated to the human
 governor.
 
-Status: **Phase 1 offline blind-review kernel verified**.
+Status: **Phase 1 verified; Phase 2A offline provider-readiness verified**.
 
 Blueprint provenance: `MODEL_COUNCIL_BLUEPRINT_v0.2.md`, 1,833 lines,
 SHA-256 `fba10c921eeaf0e6bce18b5b123294352e0748ceff880b53646362925cb8c7b5`.
@@ -19,7 +19,10 @@ Given a normalized task, a Codex proposal, and a bounded project context, run
 four blind reviewers through a replaceable model gateway, validate their
 structured outputs, persist the recoverable run state, and produce an auditable
 raw council report. Phase 1 proves this end to end with deterministic fixture
-reviewers before any real provider call.
+reviewers. Phase 2A adds provider-neutral prompt envelopes, offline capability
+verification, fail-closed egress policy, physical call attempts, retry recovery,
+cache-aware usage fields, and atomic budget reservations without making a real
+provider call.
 
 ## Baseline and stack
 
@@ -41,6 +44,7 @@ model slugs have not been inspected or configured.
 - [Architecture](docs/ARCHITECTURE.md)
 - [Implementation plan](IMPLEMENTATION_PLAN_v0.2.md)
 - [Verified Phase 1 proposal](proposals/archive/20260818-model-council-mvp0.md)
+- [Active Phase 2 proposal](proposals/active/20260821-phase-2-provider-verification.md)
 - [Security boundary](docs/SECURITY.md)
 - [Decisions](DECISIONS.md)
 - [Tasks](TASKS.md)
@@ -63,6 +67,12 @@ uv run council status R-OFFLINE-SAMPLE-001 --home .model-council
 uv run council resume R-OFFLINE-SAMPLE-001 --home .model-council
 ```
 
+Verify configured logical aliases through the offline fixture capability probe:
+
+```bash
+uv run council verify-models --config-dir config
+```
+
 Verify the project:
 
 ```bash
@@ -73,5 +83,6 @@ uv run pytest -q
 ```
 
 The CLI requires an explicit `--home`; local examples use `.model-council/`,
-which is ignored. Production-facing defaults and live providers remain Phase 2
-work and are not authorized.
+which is ignored. The checked-in provider policy has `network_enabled: false`.
+Gate B/C approval is still required before installing a provider dependency,
+using credentials, or making any live request.

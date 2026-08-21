@@ -25,13 +25,22 @@ M1 — Offline blind-review kernel
 - [x] Add partial failure, schema repair, quorum, resume, and idempotency.
 - [x] Export a raw council report and run full Phase 1 verification.
 
-## Next milestone — Gate A approved
+## Current milestone — Phase 2A verified
 
 M2 — Provider verification and guarded live review. The independent proposal
 `20260821-phase-2-provider-verification` received Gate A approval on 2026-08-21.
-Phase 2A offline provider-readiness implementation may begin. Do not install
+Phase 2A offline provider-readiness was verified on 2026-08-21. Do not install
 provider dependencies, add a live adapter, use credentials, or allow provider
 egress without the separate Gate B and Gate C approvals defined in the proposal.
+
+- [x] Split role, logical-model, provider, and prompt configuration.
+- [x] Add canonical versioned prompt envelopes and challenger output contract.
+- [x] Persist logical calls separately from physical review/repair attempts.
+- [x] Add retry classification, timeout preservation, and idempotent resume.
+- [x] Add fail-closed secret/PII/injection scanning and guarded gateway seam.
+- [x] Add offline `verify-models` capability verification.
+- [x] Add cache-aware usage fields and atomic soft/hard budget foundations.
+- [x] Add migration, contract, recovery, security, budget, and CLI tests.
 
 ## Blocking decisions for live-provider work
 

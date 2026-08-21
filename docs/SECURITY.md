@@ -1,10 +1,11 @@
-# Phase 1 Security and Operations Boundary
+# Phase 1 and Phase 2A Security and Operations Boundary
 
 ## Classification
 
 Security/Ops review is required for Model Council because later phases will
 handle provider credentials and potentially proprietary repository content.
 Phase 1 deliberately has no network or provider adapter and needs no secret.
+Phase 2A prepares the boundary offline and preserves that restriction.
 
 ## Enforced Phase 1 boundary
 
@@ -22,6 +23,22 @@ Phase 1 deliberately has no network or provider adapter and needs no secret.
 - `.env`, local databases, logs, runtime outputs, caches, and virtual
   environments are ignored.
 
+## Enforced Phase 2A boundary
+
+- Checked-in provider configuration keeps `network_enabled: false`.
+- `council verify-models` uses fixture capability declarations and performs no
+  network call.
+- Every configured review is packaged as a canonical `PromptEnvelope`; prompts,
+  context, and section hashes are retained as evidence rather than routine logs.
+- `GuardedModelGateway` applies secret, PII, injection, provider, and data-class
+  checks before delegating. Missing policy, disabled network, or scanner failure
+  denies egress.
+- Credentials remain blank placeholders and are not inspected by Phase 2A.
+- Logical calls and physical attempts are separately auditable. Retryable,
+  terminal, invalid, and ambiguous timeout outcomes remain distinct.
+- SQLite atomically reserves estimated cost before concurrent calls; hard-budget
+  denial creates no provider attempt.
+
 ## Known residual risks
 
 - Evidence artifacts may contain proprietary source supplied by the operator.
@@ -30,11 +47,16 @@ Phase 1 deliberately has no network or provider adapter and needs no secret.
   multi-host execution.
 - Fixture token counts are deterministic approximations, not provider billing
   truth.
-- Secret/PII scanning and provider-specific data policy enforcement are Phase 2
-  gates and must exist before any external egress is enabled.
+- Regex scanners are a deterministic baseline, not a complete secret/PII
+  classifier. Gate B security review must approve or strengthen scanners for the
+  selected provider and test corpus.
+- Phase 2A does not verify provider retention, training use, endpoint region,
+  pricing, or real model identity.
 
-## Phase 2 entry gate
+## Phase 2B/C entry gates
 
 Do not add a live provider adapter until the human governor approves provider
 data classes, credentials, budget values, retention policy, and a low-risk test
-corpus. Scanner or policy uncertainty must fail closed.
+corpus. Gate B must also approve the exact dependency/transport. Gate C must
+record the frozen corpus hash, exact egress material, call/token/attempt ceilings,
+and stop conditions. Scanner or policy uncertainty must fail closed.

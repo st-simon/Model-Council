@@ -123,6 +123,13 @@ Business code binds roles to logical aliases only. `models.yaml` maps aliases to
 provider model slugs that must be populated and checked by `verify-models`.
 `roles.yaml` binds role, prompt version, context budget, and alias.
 
+Phase 2A separates semantic roles in `roles.yaml`, logical aliases in
+`models.yaml`, provider policy in `providers.yaml`, and versioned templates in
+`prompts/`. `PromptBuilder` produces a canonical `PromptEnvelope` with static,
+context, dynamic, and policy sections plus independent hashes. The fixture CLI
+uses the same envelope and role-to-alias resolution intended for a future live
+adapter.
+
 Phase 1 uses `fixture_qwen`, `fixture_kimi`, `fixture_grok`, and `fixture_glm`.
 The first real-provider phase must benchmark the real review workload and
 record actual model ID, capabilities, pricing snapshot, prompt hash, context
@@ -140,6 +147,24 @@ private prompts or source are evidence artifacts, not routine log fields.
 The blueprint's provider matrix is an example only. Phase 1 uses a default-deny
 matrix, and live-provider testing requires human approval of each provider and
 data class.
+
+Phase 2A places `EgressGuard` immediately before any future outbound adapter.
+`GuardedModelGateway` refuses missing envelopes, disabled networks, unapproved
+data classes, detected secrets/PII/injection markers, and scanner failures before
+calling its delegate. The checked-in fixture provider remains network-disabled.
+
+## Logical calls, physical attempts, and budgets
+
+A logical call is unique by run, role, logical alias, context hash, and prompt
+hash. Each review or schema-repair request is a child `call_attempts` row with an
+ordinal and transport status. Resume preserves abandoned `RUNNING` attempts as
+`TIMED_OUT`, skips successful logical calls, and retries only calls in
+`RETRY_WAIT` within the configured maximum.
+
+Pre-call budget estimates are reserved atomically in SQLite before concurrent
+reviewers begin. A hard-limit reservation failure creates no physical attempt and
+never reaches the gateway. Cache creation/read and uncached input tokens remain
+separate nullable fields so unsupported or unknown usage is not recorded as zero.
 
 ## Persistence and observability
 
@@ -163,8 +188,11 @@ data class.
 ## Migration slice
 
 Phase 1 adds the application interface, three ports, fixture adapters, SQLite
-adapter, local artifact adapter, minimal CLI, schemas, and tests. No external
-provider dependency is required to pass verification.
+adapter, local artifact adapter, minimal CLI, schemas, and tests. Phase 2A adds
+provider-neutral contracts, the egress guard seam, prompt/config routing,
+attempt-level persistence, capability verification, and budget/usage accounting.
+No external provider dependency or network access is required to pass either
+phase's default verification.
 
 ## Residual risks
 

@@ -5,8 +5,8 @@ context:
   src/order.py: update_order_status(); update_inventory()
   tests/test_order.py: transaction rollback behavior is not covered
 reviewers:
-  - fixture_qwen
-  - fixture_kimi
-  - fixture_grok
-  - fixture_glm
+  - architect
+  - redteam
+  - challenger
+  - engineering
 minimum_successful_reviewers: 3

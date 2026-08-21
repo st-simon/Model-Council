@@ -1,7 +1,7 @@
 # Model Council Phase 2 — Provider Verification and Guarded Live Review
 
 - Proposal ID: `20260821-phase-2-provider-verification`
-- Status: `approved`
+- Status: `in_progress`
 - Date: 2026-08-21
 - Gate A approved: 2026-08-21 by Human Governor
 - Owner: Codex (Coordinator / Architect / Builder after approval)
@@ -459,7 +459,7 @@ Phase 2 is `verified` only when:
 
 ## State transition plan
 
-- Current: `approved`
+- Current: `in_progress` — Phase 2A verified; Gate B not approved
 - Gate A approval recorded on 2026-08-21
 - When Phase 2A implementation starts: `in_progress`
 - If Gate B inputs are missing after Phase 2A: remain `in_progress` with the
@@ -470,6 +470,27 @@ Phase 2 is `verified` only when:
 - Use `blocked` when a required approval, provider capability, credential,
   budget, policy, or test corpus prevents safe progress
 - Use `superseded` if a later approved proposal replaces this design
+
+## Phase 2A verification record
+
+Verified offline on 2026-08-21:
+
+- role/model/provider configuration and versioned prompt templates;
+- canonical section-hashed `PromptEnvelope` used by fixture reviews;
+- strict challenger falsification schema;
+- logical-call and physical review/repair attempt persistence;
+- retry-aware resume with preserved timeout ambiguity;
+- fail-closed guarded gateway for policy, secret, PII, injection, and scanner
+  failure cases;
+- offline `council verify-models` for all configured fixture aliases;
+- separate cache creation/read/uncached usage fields;
+- atomic budget reservations across concurrent reviewers;
+- Phase 1 regression, migration, CLI, security-boundary, recovery, usage, and
+  budget tests.
+
+No dependency was installed, no credential was read, and no network or provider
+call was made. The proposal remains `in_progress` because Phase 2B and Phase 2C
+are still awaiting their separate approvals and inputs.
 
 ## External-review disposition
 

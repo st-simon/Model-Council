@@ -30,6 +30,14 @@ class LocalArtifactStore:
             json.dumps(request.context, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
         )
+        if request.envelope is not None:
+            envelope_payload = request.envelope.model_dump(mode="json")
+            envelope_payload["section_hashes"] = request.envelope.section_hashes
+            envelope_payload["envelope_hash"] = request.envelope.envelope_hash
+            (call_dir / "prompt-envelope.json").write_text(
+                json.dumps(envelope_payload, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8",
+            )
 
     def write_raw_output(
         self,

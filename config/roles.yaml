@@ -1,0 +1,17 @@
+roles:
+  architect:
+    model_alias: fixture_qwen
+    prompt_version: architect-v1
+    context_budget: 12000
+  redteam:
+    model_alias: fixture_kimi
+    prompt_version: redteam-v1
+    context_budget: 16000
+  challenger:
+    model_alias: fixture_grok
+    prompt_version: challenger-v1
+    context_budget: 8000
+  engineering:
+    model_alias: fixture_glm
+    prompt_version: engineering-v1
+    context_budget: 12000

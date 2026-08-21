@@ -43,3 +43,31 @@
   approves the provider matrix. Credentials and detected secrets are always
   denied; scanner failure blocks egress.
 - Reason: the example provider matrix in the blueprint is not authorization.
+
+## D-006 — Canonical prompt envelope and guarded egress
+
+- Status: accepted under Phase 2 Gate A
+- Decision: separate static prompt, approved project context, dynamic payload,
+  and policy metadata in a canonical hashed envelope. Any future outbound adapter
+  must sit behind a fail-closed `EgressGuard`.
+- Reason: prompt caching and provider formatting may vary, but data authorization
+  and audit identity must remain provider-neutral and independently testable.
+
+## D-007 — Logical calls and physical attempts
+
+- Status: accepted under Phase 2 Gate A
+- Decision: retain one logical call identity while persisting every review or
+  repair transport attempt as a child record with its own status and usage.
+- Reason: a timeout, transient failure, schema repair, and successful review have
+  different retry and billing implications; collapsing them loses recovery truth.
+- Alternative deferred: a Saga or workflow engine remains unjustified for the
+  single-host SQLite v0.x runtime.
+
+## D-008 — Capability-gated caching and atomic budget reservations
+
+- Status: accepted under Phase 2 Gate A
+- Decision: cache behavior is an observed provider capability, never a mandatory
+  correctness dependency. Reserve estimated call cost atomically before starting
+  concurrent work and record cache read/write/uncached usage separately.
+- Reason: provider support and pricing vary, while hard-budget safety must not
+  depend on concurrent calls finishing in a favorable order.

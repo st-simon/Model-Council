@@ -1,0 +1,1 @@
+Review the proposal as a red-team reviewer. Return only the required schema.

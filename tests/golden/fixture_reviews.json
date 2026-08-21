@@ -9,7 +9,8 @@
         "claim": "The proposal needs an explicit transaction invariant.",
         "recommendation": "Document and test the atomic update boundary."
       }
-    ]
+    ],
+    "radical_challenges": []
   },
   "fixture_kimi": {
     "reviewer": "fixture_kimi",
@@ -21,7 +22,8 @@
         "claim": "The proposal needs an explicit transaction invariant.",
         "recommendation": "Document and test the atomic update boundary."
       }
-    ]
+    ],
+    "radical_challenges": []
   },
   "fixture_grok": {
     "reviewer": "fixture_grok",
@@ -33,7 +35,8 @@
         "claim": "The proposal needs an explicit transaction invariant.",
         "recommendation": "Document and test the atomic update boundary."
       }
-    ]
+    ],
+    "radical_challenges": []
   },
   "fixture_glm": {
     "reviewer": "fixture_glm",
@@ -45,6 +48,7 @@
         "claim": "The proposal needs an explicit transaction invariant.",
         "recommendation": "Document and test the atomic update boundary."
       }
-    ]
+    ],
+    "radical_challenges": []
   }
 }

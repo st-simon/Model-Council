@@ -20,8 +20,8 @@ def test_fixture_review_produces_a_persisted_report(tmp_path: Path) -> None:
     assert result.exit_code == 0, result.output
     summary = json.loads(result.output)
     assert summary["state"] == "COMPLETED"
-    assert summary["successful_reviewers"] == ["fixture_qwen"]
+    assert summary["successful_reviewers"] == ["architect"]
     report = Path(summary["report_path"])
     assert report.exists()
-    assert "fixture_qwen" in report.read_text(encoding="utf-8")
+    assert "architect" in report.read_text(encoding="utf-8")
     assert (tmp_path / "council.db").exists()

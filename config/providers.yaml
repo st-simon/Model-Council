@@ -1,0 +1,6 @@
+providers:
+  fixture:
+    network_enabled: false
+    allowed_data_classes:
+      - PUBLIC
+      - INTERNAL
