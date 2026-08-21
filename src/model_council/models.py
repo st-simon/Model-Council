@@ -57,6 +57,7 @@ class CallErrorKind(StrEnum):
     AUTHENTICATION = "AUTHENTICATION"
     POLICY = "POLICY"
     INVALID_REQUEST = "INVALID_REQUEST"
+    INVALID_RESPONSE = "INVALID_RESPONSE"
     PERMANENT = "PERMANENT"
 
 
@@ -194,6 +195,13 @@ class ProviderCapabilities(BaseModel):
     structured_output: bool
     prompt_cache: bool = False
     cache_min_prefix_tokens: int | None = None
+    usage_reporting: bool = False
+    request_id_reporting: bool = False
+    max_context_tokens: int | None = None
+    max_output_tokens: int | None = None
+    region: str | None = None
+    endpoint_class: str | None = None
+    pricing_snapshot_id: str | None = None
     network_call_performed: bool = False
 
 
@@ -216,7 +224,9 @@ class GatewayResponse(BaseModel):
     cache_read_input_tokens: int | None = None
     output_tokens: int
     latency_ms: int
-    cost_rmb: float = 0.0
+    cost_rmb: float | None = None
+    provider_request_id: str | None = None
+    pricing_snapshot_id: str | None = None
 
 
 class Finding(BaseModel):
@@ -257,6 +267,8 @@ class StoredCall(BaseModel):
     output_tokens: int | None = None
     latency_ms: int | None = None
     cost_rmb: float | None = None
+    provider_request_id: str | None = None
+    pricing_snapshot_id: str | None = None
 
 
 class StoredAttempt(BaseModel):
@@ -275,6 +287,8 @@ class StoredAttempt(BaseModel):
     output_tokens: int | None = None
     latency_ms: int | None = None
     cost_rmb: float | None = None
+    provider_request_id: str | None = None
+    pricing_snapshot_id: str | None = None
     started_at: datetime
     finished_at: datetime | None = None
     next_retry_at: datetime | None = None
@@ -305,5 +319,7 @@ class CallLogEvent(BaseModel):
     output_tokens: int | None = None
     latency_ms: int | None = None
     cost_rmb: float | None = None
+    provider_request_id: str | None = None
+    pricing_snapshot_id: str | None = None
     status: CallStatus
     error_code: str | None = None

@@ -101,13 +101,19 @@ def test_offline_verify_models_reports_declared_fixture_capabilities() -> None:
     assert result.exit_code == 0, result.output
     payload = json.loads(result.output)
     assert {item["model_alias"] for item in payload} == {
+        "architect_primary_v1",
         "fixture_qwen",
         "fixture_kimi",
         "fixture_grok",
         "fixture_glm",
     }
     assert all(item["compatible"] for item in payload)
-    assert all(item["provider"] == "fixture" for item in payload)
+    providers = {item["model_alias"]: item["provider"] for item in payload}
+    assert providers["architect_primary_v1"] == "qwen_model_studio"
+    assert all(
+        providers[alias] == "fixture"
+        for alias in {"fixture_qwen", "fixture_kimi", "fixture_grok", "fixture_glm"}
+    )
     assert all(item["network_call_performed"] is False for item in payload)
 
 

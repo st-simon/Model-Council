@@ -51,6 +51,26 @@ def test_runtime_config_separates_role_alias_and_provider() -> None:
     assert config.resolve_provider("fixture").network_enabled is False
 
 
+def test_gate_b_qwen_policy_remains_offline_and_public_only() -> None:
+    config = load_runtime_config(Path("config"))
+
+    model = config.resolve_model("architect_primary_v1")
+    provider = config.resolve_provider(model.provider)
+
+    assert model.model == "qwen3.7-max-2026-05-20"
+    assert model.required_capabilities == {
+        "structured_output": True,
+        "usage_reporting": True,
+        "request_id_reporting": True,
+    }
+    assert provider.region == "ap-northeast-1"
+    assert provider.allowed_data_classes == ["PUBLIC"]
+    assert provider.network_enabled is False
+    assert provider.payload_retention == "unknown"
+    assert provider.inference_logging_enabled is False
+    assert provider.prompt_cache_enabled is False
+
+
 def test_radical_challenge_requires_falsification_fields() -> None:
     with pytest.raises(ValidationError):
         RadicalChallenge.model_validate(

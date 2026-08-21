@@ -6,7 +6,7 @@ findings are normalized and reconciled, and Codex remains the only repository
 write actor. High-impact unresolved decisions are escalated to the human
 governor.
 
-Status: **Phase 1 verified; Phase 2A offline provider-readiness verified**.
+Status: **Phase 1 verified; Phase 2B Qwen adapter verified offline**.
 
 Blueprint provenance: `MODEL_COUNCIL_BLUEPRINT_v0.2.md`, 1,833 lines,
 SHA-256 `fba10c921eeaf0e6bce18b5b123294352e0748ceff880b53646362925cb8c7b5`.
@@ -22,7 +22,9 @@ raw council report. Phase 1 proves this end to end with deterministic fixture
 reviewers. Phase 2A adds provider-neutral prompt envelopes, offline capability
 verification, fail-closed egress policy, physical call attempts, retry recovery,
 cache-aware usage fields, and atomic budget reservations without making a real
-provider call.
+provider call. Phase 2B adds one Qwen Model Studio adapter for the Tokyo region,
+with mock-transport contract tests and an offline capability declaration. It is
+not wired into the review command and remains network-disabled pending Gate C.
 
 ## Baseline and stack
 
@@ -31,6 +33,7 @@ provider call.
 - Dependency manager: `uv` with committed `uv.lock`
 - Phase 1 core: Typer, Pydantic v2, SQLAlchemy, Alembic, SQLite, PyYAML,
   `asyncio`, and `orjson`
+- Phase 2B transport: HTTPX `0.28.x`, used only by the Qwen adapter
 - Deferred: Redis, PostgreSQL, Docker Compose, LangGraph, CrewAI, AutoGen,
   dashboard, and production deployment
 
@@ -67,7 +70,7 @@ uv run council status R-OFFLINE-SAMPLE-001 --home .model-council
 uv run council resume R-OFFLINE-SAMPLE-001 --home .model-council
 ```
 
-Verify configured logical aliases through the offline fixture capability probe:
+Verify configured logical aliases through offline capability declarations:
 
 ```bash
 uv run council verify-models --config-dir config
@@ -83,6 +86,7 @@ uv run pytest -q
 ```
 
 The CLI requires an explicit `--home`; local examples use `.model-council/`,
-which is ignored. The checked-in provider policy has `network_enabled: false`.
-Gate B/C approval is still required before installing a provider dependency,
-using credentials, or making any live request.
+which is ignored. The checked-in Qwen provider policy allows only `PUBLIC` data
+and has `network_enabled: false`. `verify-models` does not read credentials or
+make provider calls. Gate C is still required before supplying credentials,
+enabling the provider, transmitting content, or incurring cost.

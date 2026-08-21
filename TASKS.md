@@ -25,13 +25,14 @@ M1 — Offline blind-review kernel
 - [x] Add partial failure, schema repair, quorum, resume, and idempotency.
 - [x] Export a raw council report and run full Phase 1 verification.
 
-## Current milestone — Phase 2A verified
+## Current milestone — Phase 2B verified offline
 
 M2 — Provider verification and guarded live review. The independent proposal
 `20260821-phase-2-provider-verification` received Gate A approval on 2026-08-21.
-Phase 2A offline provider-readiness was verified on 2026-08-21. Do not install
-provider dependencies, add a live adapter, use credentials, or allow provider
-egress without the separate Gate B and Gate C approvals defined in the proposal.
+Phase 2A offline provider-readiness was verified on 2026-08-21. Gate B was
+approved on 2026-08-21 and the Qwen adapter was verified against mock transport.
+Do not use credentials, enable provider networking, or allow provider egress
+without the separate Gate C approval defined in the proposal.
 
 - [x] Split role, logical-model, provider, and prompt configuration.
 - [x] Add canonical versioned prompt envelopes and challenger output contract.
@@ -41,11 +42,17 @@ egress without the separate Gate B and Gate C approvals defined in the proposal.
 - [x] Add offline `verify-models` capability verification.
 - [x] Add cache-aware usage fields and atomic soft/hard budget foundations.
 - [x] Add migration, contract, recovery, security, budget, and CLI tests.
+- [x] Record the Gate B Qwen/Tokyo/PUBLIC-only provider policy.
+- [x] Add and lock HTTPX as the reviewed direct transport.
+- [x] Implement the Qwen adapter with sanitized error classification.
+- [x] Verify the approved alias and capabilities without network or credentials.
+- [x] Persist safe request IDs and pricing snapshot provenance.
+- [x] Pass mock adapter, migration, regression, lint, format, and type checks.
 
-## Blocking decisions for live-provider work
+## Blocking decisions for Gate C live verification
 
-- Provider/data egress matrix
-- Credential source and rotation expectations
 - Per-run and global budget values
-- Approved provider model aliases after `verify-models`
 - First low-risk real test repository
+- Exact permitted material/corpus hash and test window
+- Maximum calls, attempts, tokens, and total spend
+- Local evidence retention and deletion owner

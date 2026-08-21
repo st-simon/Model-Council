@@ -93,4 +93,5 @@ class FixtureModelGateway:
             cache_read_input_tokens=input_tokens if cached else 0,
             output_tokens=len(raw.split()),
             latency_ms=0,
+            cost_rmb=0.0,
         )

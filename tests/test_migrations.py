@@ -24,7 +24,12 @@ def test_migrations_upgrade_and_downgrade_phase_two_a(tmp_path: Path) -> None:
         "kind",
         "status",
         "next_retry_at",
+        "provider_request_id",
+        "pricing_snapshot_id",
     } <= {column["name"] for column in inspector.get_columns("call_attempts")}
+    assert {"provider_request_id", "pricing_snapshot_id"} <= {
+        column["name"] for column in inspector.get_columns("calls")
+    }
     assert {
         "uncached_input_tokens",
         "cache_creation_input_tokens",

@@ -72,6 +72,8 @@ class CallRow(Base):
     output_tokens: Mapped[int | None] = mapped_column(nullable=True)
     latency_ms: Mapped[int | None] = mapped_column(nullable=True)
     cost_rmb: Mapped[float | None] = mapped_column(nullable=True)
+    provider_request_id: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    pricing_snapshot_id: Mapped[str | None] = mapped_column(String(200), nullable=True)
 
 
 class CallAttemptRow(Base):
@@ -95,6 +97,8 @@ class CallAttemptRow(Base):
     output_tokens: Mapped[int | None] = mapped_column(nullable=True)
     latency_ms: Mapped[int | None] = mapped_column(nullable=True)
     cost_rmb: Mapped[float | None] = mapped_column(nullable=True)
+    provider_request_id: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    pricing_snapshot_id: Mapped[str | None] = mapped_column(String(200), nullable=True)
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
@@ -246,6 +250,8 @@ class SQLiteRunStore:
             row.output_tokens = response.output_tokens
             row.latency_ms = response.latency_ms
             row.cost_rmb = response.cost_rmb
+            row.provider_request_id = response.provider_request_id
+            row.pricing_snapshot_id = response.pricing_snapshot_id
             row.finished_at = datetime.now(UTC)
             session.commit()
 
@@ -294,6 +300,8 @@ class SQLiteRunStore:
             row.output_tokens = response.output_tokens
             row.latency_ms = response.latency_ms
             row.cost_rmb = response.cost_rmb
+            row.provider_request_id = response.provider_request_id
+            row.pricing_snapshot_id = response.pricing_snapshot_id
             session.commit()
 
     def save_failure(
@@ -415,6 +423,8 @@ class SQLiteRunStore:
             output_tokens=row.output_tokens,
             latency_ms=row.latency_ms,
             cost_rmb=row.cost_rmb,
+            provider_request_id=row.provider_request_id,
+            pricing_snapshot_id=row.pricing_snapshot_id,
         )
 
     @staticmethod
@@ -435,6 +445,8 @@ class SQLiteRunStore:
             output_tokens=row.output_tokens,
             latency_ms=row.latency_ms,
             cost_rmb=row.cost_rmb,
+            provider_request_id=row.provider_request_id,
+            pricing_snapshot_id=row.pricing_snapshot_id,
             started_at=row.started_at,
             finished_at=row.finished_at,
             next_retry_at=row.next_retry_at,

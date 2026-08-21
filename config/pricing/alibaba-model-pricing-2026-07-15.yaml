@@ -1,0 +1,17 @@
+pricing_snapshot:
+  id: alibaba-model-pricing-2026-07-15
+  provider: qwen_model_studio
+  model: qwen3.7-max-2026-05-20
+  region: ap-northeast-1
+  deployment_scope: Global
+  source_url: https://www.alibabacloud.com/help/en/model-studio/model-pricing
+  source_last_updated: 2026-07-15
+  retrieved_at: 2026-08-21
+  currency: USD
+  unit_tokens: 1000000
+  input_list_price: 1.65
+  output_list_price: 4.951
+  promotions_included: false
+  prompt_cache_enabled_by_policy: false
+  rmb_conversion_rate: null
+  note: RMB cost remains unknown until Gate C approves a conversion source and budget.

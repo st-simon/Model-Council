@@ -1,9 +1,10 @@
 # Model Council Phase 2 — Provider Verification and Guarded Live Review
 
 - Proposal ID: `20260821-phase-2-provider-verification`
-- Status: `in_progress`
+- Status: `implemented`
 - Date: 2026-08-21
 - Gate A approved: 2026-08-21 by Human Governor
+- Gate B approved: 2026-08-21 by Human Governor
 - Owner: Codex (Coordinator / Architect / Builder after approval)
 - Human governor: user
 - Depends on: verified Phase 1 proposal `20260818-model-council-mvp0`
@@ -437,8 +438,12 @@ uv run pytest -q
 git diff --check
 ```
 
-Provider-specific verification commands will be added only after Gate B names
-the adapter and dependency.
+Provider-specific offline verification uses:
+
+```bash
+uv run pytest -q tests/test_phase2b_qwen_adapter.py
+uv run council verify-models --config-dir config
+```
 
 ## Done criteria
 
@@ -459,8 +464,9 @@ Phase 2 is `verified` only when:
 
 ## State transition plan
 
-- Current: `in_progress` — Phase 2A verified; Gate B not approved
+- Current: `implemented` — Phase 2B verified offline; Gate C not approved
 - Gate A approval recorded on 2026-08-21
+- Gate B approval recorded on 2026-08-21
 - When Phase 2A implementation starts: `in_progress`
 - If Gate B inputs are missing after Phase 2A: remain `in_progress` with the
   provider slice explicitly blocked; do not mislabel Phase 2 as complete
@@ -488,9 +494,34 @@ Verified offline on 2026-08-21:
 - Phase 1 regression, migration, CLI, security-boundary, recovery, usage, and
   budget tests.
 
-No dependency was installed, no credential was read, and no network or provider
-call was made. The proposal remains `in_progress` because Phase 2B and Phase 2C
-are still awaiting their separate approvals and inputs.
+At the Phase 2A closeout, no dependency was installed, no credential was read,
+and no network or provider call was made. Phase 2B was not yet authorized at
+that checkpoint; its later approval and implementation are recorded below.
+
+## Gate B decision and Phase 2B verification record
+
+Gate B was approved by the Human Governor on 2026-08-21 with this exact row:
+
+- provider: Alibaba Cloud Model Studio / Qwen;
+- endpoint: Tokyo workspace-specific OpenAI-compatible endpoint;
+- data class: `PUBLIC` only; all non-public, PII, secret, and credential data denied;
+- logical alias: `architect_primary_v1`;
+- pinned model: `qwen3.7-max-2026-05-20`;
+- transport: `httpx>=0.28.1,<0.29`, direct Chat Completions HTTP;
+- credential source: `DASHSCOPE_API_KEY`, with workspace ID supplied separately;
+- provider call data is assumed not used for training per provider documentation;
+  payload retention remains unknown;
+- provider inference logging and prompt caching remain disabled.
+
+Phase 2B was implemented and verified offline on 2026-08-21. The adapter maps
+sanitized authentication, throttling, timeout, transport, invalid-request, and
+invalid-response errors; captures model identity, usage/cache fields, latency,
+safe request ID, and pricing snapshot provenance; and passes mock-transport
+contract tests. `council verify-models` verifies the approved alias without
+credentials or a provider call. Checked-in policy remains `network_enabled:
+false`; no credential was read and no external model request was made.
+
+The proposal is `implemented` but not `verified`; Gate C remains pending.
 
 ## External-review disposition
 
@@ -508,14 +539,9 @@ are still awaiting their separate approvals and inputs.
 | Phase 01-A/B/C renumbering | Rejected; retain the approved phase model | — |
 | Fixed semantic threshold or 50%–70% savings target | Rejected without workload evidence | — |
 
-## Open decisions required for Gate B/C
+## Open decisions required for Gate C
 
-- Which provider is first?
-- Which data classes may that provider receive?
-- Which endpoint/region and retention/training settings apply?
-- How is the credential supplied, rotated, and revoked?
 - What are the per-call, per-run, attempt, token, and spend ceilings?
-- Which logical alias and required capabilities are being verified?
 - Which frozen low-risk repository/commit or corpus hash is approved?
 - How long may local evidence be retained, and who deletes it?
 
@@ -535,8 +561,8 @@ are still awaiting their separate approvals and inputs.
 
 ## Approval request
 
-**Gate A was approved on 2026-08-21.** Phase 2A offline implementation is
-authorized under this proposal. This approval does not authorize dependency
-installation, credentials, network calls, provider adapter implementation, or
-repository-content egress. Gate B and Gate C require separate, explicit
-human-governor approval after their exact inputs are recorded.
+**Gate A and Gate B were approved on 2026-08-21.** Phase 2A and the offline
+Phase 2B Qwen adapter are implemented. These approvals do not authorize
+credentials, network calls, repository-content egress, or provider spend. Gate C
+requires separate, explicit human-governor approval after its exact corpus,
+limits, budget, test window, and retention inputs are recorded.

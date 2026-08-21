@@ -71,3 +71,22 @@
   concurrent work and record cache read/write/uncached usage separately.
 - Reason: provider support and pricing vary, while hard-budget safety must not
   depend on concurrent calls finishing in a favorable order.
+
+## D-009 — First provider adapter and Gate B boundary
+
+- Status: accepted under Phase 2 Gate B on 2026-08-21
+- Decision: implement one direct HTTPX adapter for Alibaba Cloud Model Studio in
+  the Tokyo region. Map logical alias `architect_primary_v1` to pinned model
+  `qwen3.7-max-2026-05-20`; permit only `PUBLIC` egress; keep provider inference
+  logging and prompt caching disabled.
+- Credential boundary: read a dedicated, model/IP-scoped key only from
+  `DASHSCOPE_API_KEY` and the workspace ID only from
+  `DASHSCOPE_WORKSPACE_ID` after Gate C. Rotate at least every 90 days and reset,
+  disable, or delete immediately on suspected exposure.
+- Data handling assumption: the provider states call data is not used for model
+  training; payload retention remains unknown, so non-public data stays denied.
+- Reason: a direct adapter keeps provider schema, timeout, usage, and sanitized
+  error mapping behind `ModelGateway` without introducing a multi-provider SDK.
+- Gate boundary: Gate B authorizes offline adapter implementation and mock
+  verification only. Credentials, network enablement, content egress, and billed
+  calls still require Gate C.

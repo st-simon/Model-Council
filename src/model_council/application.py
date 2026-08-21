@@ -269,6 +269,8 @@ class CouncilApplication:
                 output_tokens=response.output_tokens,
                 latency_ms=response.latency_ms,
                 cost_rmb=response.cost_rmb,
+                provider_request_id=response.provider_request_id,
+                pricing_snapshot_id=response.pricing_snapshot_id,
                 status=status,
                 error_code=error_code,
             )

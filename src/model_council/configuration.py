@@ -21,6 +21,14 @@ class ModelAliasConfig(BaseModel):
 class ProviderConfig(BaseModel):
     network_enabled: bool = False
     allowed_data_classes: list[str] = Field(default_factory=list)
+    region: str | None = None
+    endpoint_template: str | None = None
+    credential_env: str | None = None
+    workspace_id_env: str | None = None
+    training_use: str = "unknown"
+    payload_retention: str = "unknown"
+    inference_logging_enabled: bool = False
+    prompt_cache_enabled: bool = False
 
 
 class RuntimeConfig(BaseModel):
