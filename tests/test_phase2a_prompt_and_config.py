@@ -59,7 +59,8 @@ def test_gate_b_qwen_policy_remains_offline_and_public_only() -> None:
 
     assert model.model == "qwen3.7-max-2026-05-20"
     assert model.required_capabilities == {
-        "structured_output": True,
+        "json_mode": True,
+        "local_schema_validation": True,
         "usage_reporting": True,
         "request_id_reporting": True,
     }

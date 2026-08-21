@@ -147,12 +147,12 @@ class CouncilApplication:
             response.raw_output,
         )
         output: ReviewOutput | None = None
-        for repair_attempt in range(3):
+        for repair_attempt in range(review_input.max_schema_repairs + 1):
             try:
                 output = ReviewOutput.model_validate_json(response.raw_output)
                 break
             except ValidationError as error:
-                if repair_attempt == 2:
+                if repair_attempt == review_input.max_schema_repairs:
                     self.run_store.save_invalid(
                         request.run_id, request.role, "REVIEW_INVALID"
                     )

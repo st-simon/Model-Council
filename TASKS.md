@@ -25,14 +25,15 @@ M1 — Offline blind-review kernel
 - [x] Add partial failure, schema repair, quorum, resume, and idempotency.
 - [x] Export a raw council report and run full Phase 1 verification.
 
-## Current milestone — Phase 2B verified offline
+## Current milestone — Gate C approved; live verification pending
 
 M2 — Provider verification and guarded live review. The independent proposal
 `20260821-phase-2-provider-verification` received Gate A approval on 2026-08-21.
 Phase 2A offline provider-readiness was verified on 2026-08-21. Gate B was
 approved on 2026-08-21 and the Qwen adapter was verified against mock transport.
-Do not use credentials, enable provider networking, or allow provider egress
-without the separate Gate C approval defined in the proposal.
+Gate C and its three supplementary model-risk controls were approved on
+2026-08-21. The guarded runner is implemented offline; do not execute it outside
+the exact commit, console, credential, window, corpus, and limit conditions.
 
 - [x] Split role, logical-model, provider, and prompt configuration.
 - [x] Add canonical versioned prompt envelopes and challenger output contract.
@@ -49,10 +50,26 @@ without the separate Gate C approval defined in the proposal.
 - [x] Persist safe request IDs and pricing snapshot provenance.
 - [x] Pass mock adapter, migration, regression, lint, format, and type checks.
 
-## Blocking decisions for Gate C live verification
+## Gate C approved decisions
 
-- Per-run and global budget values
-- First low-risk real test repository
-- Exact permitted material/corpus hash and test window
-- Maximum calls, attempts, tokens, and total spend
-- Local evidence retention and deletion owner
+- Synthetic public corpus and exact permitted material
+- Execution window and no-retry policy
+- Maximum requests, attempts, tokens, USD spend, and RMB hard budget
+- Credential and provider-console prerequisites
+- Local evidence retention and Human Governor deletion ownership
+
+## Gate C authorization preparation
+
+- [x] Freeze a synthetic `PUBLIC` capability probe and review envelope.
+- [x] Record raw corpus, envelope, and section hashes.
+- [x] Define exact request, attempt, token, time, and spend ceilings.
+- [x] Define endpoint, credential, console, stop, and retention conditions.
+- [x] Add an offline corpus integrity and egress-scan test.
+- [x] Human Governor approval of
+  `20260821-gate-c-qwen-live-verification`.
+- [x] Split JSON-mode, schema-enforcement, and local-validation capabilities.
+- [x] Reject provider output extras and non-stop `finish_reason` values.
+- [x] Implement and mock-test the two-request Gate C runner.
+- [x] Synchronize README and Security/Ops status language.
+- [ ] Clean-commit offline preflight immediately before live execution.
+- [ ] Authorized live execution within the approved window.

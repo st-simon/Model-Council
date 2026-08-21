@@ -15,6 +15,7 @@ from model_council.models import (
     PolicyMetadata,
     PromptEnvelope,
     ReviewInput,
+    ReviewOutput,
 )
 
 ALIAS = "architect_primary_v1"
@@ -68,7 +69,9 @@ def test_capabilities_are_declared_without_a_network_call() -> None:
     result = asyncio.run(gateway.capabilities(ALIAS))
 
     assert result.actual_model_id == MODEL
-    assert result.structured_output is True
+    assert result.json_mode is True
+    assert result.json_schema_enforced is False
+    assert result.local_schema_validation is True
     assert result.usage_reporting is True
     assert result.request_id_reporting is True
     assert result.region == "ap-northeast-1"
@@ -88,7 +91,12 @@ def test_review_maps_openai_compatible_response_without_cache_assumptions() -> N
             json={
                 "id": "chatcmpl-fallback",
                 "model": MODEL,
-                "choices": [{"message": {"content": '{"summary":"ok"}'}}],
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {"content": '{"summary":"ok"}'},
+                    }
+                ],
                 "usage": {
                     "prompt_tokens": 120,
                     "completion_tokens": 15,
@@ -109,6 +117,7 @@ def test_review_maps_openai_compatible_response_without_cache_assumptions() -> N
     assert isinstance(body, dict)
     assert body["model"] == MODEL
     assert body["response_format"] == {"type": "json_object"}
+    assert body["enable_thinking"] is False
     assert body["max_completion_tokens"] == 2048
     assert "Public fixture content." in body["messages"][1]["content"]
     assert result.input_tokens == 120
@@ -118,6 +127,47 @@ def test_review_maps_openai_compatible_response_without_cache_assumptions() -> N
     assert result.provider_request_id == "req-safe-123"
     assert result.pricing_snapshot_id == PRICING_SNAPSHOT_ID
     assert result.cost_rmb is None
+
+
+def test_json_mode_probe_uses_the_gate_c_request_contract() -> None:
+    captured: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["body"] = json.loads(request.content)
+        return httpx.Response(
+            200,
+            headers={"x-request-id": "req-probe"},
+            json={
+                "model": MODEL,
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {"content": '{"status":"ok"}'},
+                    }
+                ],
+                "usage": {"prompt_tokens": 25, "completion_tokens": 5},
+            },
+        )
+
+    gateway, client = _gateway(httpx.MockTransport(handler))
+    try:
+        response = asyncio.run(
+            gateway.probe_json_mode(
+                model_alias=ALIAS,
+                system="Return JSON only.",
+                user="Return status ok.",
+                max_output_tokens=256,
+            )
+        )
+    finally:
+        asyncio.run(client.aclose())
+
+    body = captured["body"]
+    assert isinstance(body, dict)
+    assert body["enable_thinking"] is False
+    assert body["max_completion_tokens"] == 256
+    assert body["response_format"] == {"type": "json_object"}
+    assert response.raw_output == '{"status":"ok"}'
 
 
 @pytest.mark.parametrize(
@@ -159,6 +209,22 @@ def test_missing_credential_fails_before_transport() -> None:
     assert caught.value.kind == CallErrorKind.AUTHENTICATION
 
 
+def test_json_probe_missing_credential_fails_before_transport() -> None:
+    gateway = QwenModelGateway(
+        alias_to_model={ALIAS: MODEL}, base_url=BASE_URL, api_key=None
+    )
+
+    with pytest.raises(ModelCallError, match="PROVIDER_CREDENTIAL_MISSING"):
+        asyncio.run(
+            gateway.probe_json_mode(
+                model_alias=ALIAS,
+                system="Return JSON only.",
+                user="Return status ok.",
+                max_output_tokens=256,
+            )
+        )
+
+
 def test_adapter_rejects_unapproved_endpoint() -> None:
     with pytest.raises(ValueError, match="approved Tokyo"):
         QwenModelGateway(
@@ -175,7 +241,12 @@ def test_unsafe_provider_request_id_is_not_persisted() -> None:
             headers={"x-request-id": "unsafe request id"},
             json={
                 "model": MODEL,
-                "choices": [{"message": {"content": '{"summary":"ok"}'}}],
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {"content": '{"summary":"ok"}'},
+                    }
+                ],
                 "usage": {"prompt_tokens": 10, "completion_tokens": 2},
             },
         )
@@ -205,6 +276,43 @@ def test_malformed_provider_response_is_terminal_and_sanitized() -> None:
     assert "private content" not in str(caught.value)
 
 
+def test_truncated_provider_response_is_rejected() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "model": MODEL,
+                "choices": [
+                    {
+                        "finish_reason": "length",
+                        "message": {"content": '{"summary":"partial"}'},
+                    }
+                ],
+                "usage": {"prompt_tokens": 10, "completion_tokens": 20},
+            },
+        )
+
+    gateway, client = _gateway(httpx.MockTransport(handler))
+    try:
+        with pytest.raises(ModelCallError, match="PROVIDER_OUTPUT_TRUNCATED"):
+            asyncio.run(gateway.review(_request()))
+    finally:
+        asyncio.run(client.aclose())
+
+
+def test_review_output_forbids_unapproved_fields() -> None:
+    with pytest.raises(ValueError, match="Extra inputs are not permitted"):
+        ReviewOutput.model_validate(
+            {
+                "reviewer": "architect",
+                "summary": "valid content",
+                "findings": [],
+                "radical_challenges": [],
+                "unexpected": "not approved",
+            }
+        )
+
+
 def test_provider_evidence_is_persisted_on_physical_attempt(tmp_path) -> None:
     from model_council.adapters.sqlite import SQLiteRunStore
 
@@ -215,7 +323,12 @@ def test_provider_evidence_is_persisted_on_physical_attempt(tmp_path) -> None:
             json={
                 "id": "chatcmpl-persisted",
                 "model": MODEL,
-                "choices": [{"message": {"content": '{"summary":"ok"}'}}],
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {"content": '{"summary":"ok"}'},
+                    }
+                ],
                 "usage": {"prompt_tokens": 10, "completion_tokens": 2},
             },
         )

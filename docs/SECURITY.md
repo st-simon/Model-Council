@@ -1,11 +1,13 @@
-# Phase 1 and Phase 2A Security and Operations Boundary
+# Phase 1 through Gate C Security and Operations Boundary
 
 ## Classification
 
 Security/Ops review is required for Model Council because later phases will
 handle provider credentials and potentially proprietary repository content.
 Phase 1 deliberately has no network or provider adapter and needs no secret.
-Phase 2A prepares the boundary offline and preserves that restriction.
+Phase 2A prepares the boundary offline. Phase 2B adds one Qwen adapter behind a
+checked-in network deny policy. Gate C is approved for one separately invoked,
+bounded live run, but no live provider request has yet been made.
 
 ## Enforced Phase 1 boundary
 
@@ -39,6 +41,46 @@ Phase 2A prepares the boundary offline and preserves that restriction.
 - SQLite atomically reserves estimated cost before concurrent calls; hard-budget
   denial creates no provider attempt.
 
+## Enforced Phase 2B model boundary
+
+- The only provider adapter is Alibaba Cloud Model Studio / Qwen through the
+  workspace-specific Tokyo HTTPS endpoint and direct HTTPX transport.
+- Business logic uses `architect_primary_v1`; the adapter resolves it to the
+  approved `qwen3.7-max-2026-05-20` physical model.
+- Capability declarations distinguish JSON mode, provider-enforced JSON Schema,
+  and local schema validation. The approved model claims JSON mode plus strict
+  local validation, not provider-enforced JSON Schema.
+- Provider-originated JSON output models use strict Pydantic validation and
+  reject undeclared fields with `extra="forbid"`.
+- Qwen responses must explicitly report `finish_reason="stop"`. Truncation,
+  missing finish reason, or any other completion reason is terminal.
+- Provider errors are mapped to sanitized codes. Response bodies and credentials
+  are excluded from routine logs.
+
+## Approved Gate C execution boundary
+
+- Authorization `20260821-gate-c-qwen-live-verification` permits only the frozen
+  synthetic `PUBLIC` corpus and hashes recorded in the authorization packet.
+- Execution is isolated in `council gate-c-qwen`; the general review command
+  remains fixture-backed and checked-in provider policy remains
+  `network_enabled: false`.
+- The command requires the exact approval ID, an explicit execute flag, all
+  three console confirmations, confirmation that the offline suite passed, an
+  open authorization window, a clean worktree, and an exact approved full commit
+  SHA before it reads environment credentials.
+- Credentials are accepted only from `DASHSCOPE_API_KEY` and
+  `DASHSCOPE_WORKSPACE_ID`. Their values are not persisted or printed.
+- The runner reserves the full RMB 0.20 ceiling before egress. It permits one
+  256-token JSON probe followed conditionally by one 1,792-token review: at most
+  two physical requests, one attempt each, no repair, and no retry.
+- Thinking, tools, web search, streaming, inference logging, and prompt caching
+  are disabled. Any observed cache use, physical-model drift, missing safe
+  request ID, pricing drift, token/budget/time excess, or invalid strict output
+  stops the run.
+- The dedicated API key must be disabled, reset, or deleted immediately after
+  evidence reconciliation. Local redacted evidence has a 30-day retention
+  ceiling under Human Governor deletion ownership.
+
 ## Known residual risks
 
 - Evidence artifacts may contain proprietary source supplied by the operator.
@@ -48,15 +90,21 @@ Phase 2A prepares the boundary offline and preserves that restriction.
 - Fixture token counts are deterministic approximations, not provider billing
   truth.
 - Regex scanners are a deterministic baseline, not a complete secret/PII
-  classifier. Gate B security review must approve or strengthen scanners for the
-  selected provider and test corpus.
-- Phase 2A does not verify provider retention, training use, endpoint region,
-  pricing, or real model identity.
+  classifier. Gate C therefore authorizes only the frozen synthetic public
+  corpus, not repository source or internal data.
+- Provider-side payload retention remains unknown. The provider states call data
+  is not used for training, but that does not establish a precise deletion
+  period.
+- A timeout may have incurred cost even without a usable response; Gate C never
+  retries that ambiguous outcome.
+- Actual endpoint routing, billing evidence, model identity, usage reporting,
+  and JSON-mode reliability remain unverified until the authorized live run.
 
-## Phase 2B/C entry gates
+## Gate C status
 
-Do not add a live provider adapter until the human governor approves provider
-data classes, credentials, budget values, retention policy, and a low-risk test
-corpus. Gate B must also approve the exact dependency/transport. Gate C must
-record the frozen corpus hash, exact egress material, call/token/attempt ceilings,
-and stop conditions. Scanner or policy uncertainty must fail closed.
+The Human Governor approved Gate C and the three supplementary model-risk
+controls on 2026-08-21. The runner is implemented and mock-tested offline. Live
+execution must not begin before 2026-08-22 09:00 JST or after 2026-08-28 21:00
+JST, and it must originate from a clean implementation commit separately named
+to the command. Scanner, console, credential, policy, or evidence uncertainty
+fails closed.

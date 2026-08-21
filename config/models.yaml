@@ -3,26 +3,31 @@ models:
     provider: fixture
     model: fixture-qwen-v1
     required_capabilities:
-      structured_output: true
+      json_mode: true
+      local_schema_validation: true
   fixture_kimi:
     provider: fixture
     model: fixture-kimi-v1
     required_capabilities:
-      structured_output: true
+      json_mode: true
+      local_schema_validation: true
   fixture_grok:
     provider: fixture
     model: fixture-grok-v1
     required_capabilities:
-      structured_output: true
+      json_mode: true
+      local_schema_validation: true
   fixture_glm:
     provider: fixture
     model: fixture-glm-v1
     required_capabilities:
-      structured_output: true
+      json_mode: true
+      local_schema_validation: true
   architect_primary_v1:
     provider: qwen_model_studio
     model: qwen3.7-max-2026-05-20
     required_capabilities:
-      structured_output: true
+      json_mode: true
+      local_schema_validation: true
       usage_reporting: true
       request_id_reporting: true

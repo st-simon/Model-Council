@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 SAFE_IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$")
 
@@ -154,6 +154,7 @@ class ReviewInput(BaseModel):
     reviewers: list[str]
     minimum_successful_reviewers: int = 1
     max_provider_attempts: int = Field(default=2, ge=1, le=5)
+    max_schema_repairs: int = Field(default=2, ge=0, le=2)
     budget: BudgetPolicy = Field(default_factory=BudgetPolicy)
 
     @field_validator("project_id", "run_id")
@@ -192,7 +193,9 @@ class ProviderCapabilities(BaseModel):
     provider: str
     model_alias: str
     actual_model_id: str
-    structured_output: bool
+    json_mode: bool = False
+    json_schema_enforced: bool = False
+    local_schema_validation: bool = False
     prompt_cache: bool = False
     cache_min_prefix_tokens: int | None = None
     usage_reporting: bool = False
@@ -229,21 +232,29 @@ class GatewayResponse(BaseModel):
     pricing_snapshot_id: str | None = None
 
 
-class Finding(BaseModel):
+class StrictProviderOutput(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+
+class JsonModeProbeOutput(StrictProviderOutput):
+    status: str = Field(pattern="^ok$")
+
+
+class Finding(StrictProviderOutput):
     category: str
     raw_severity: str
     claim: str
     recommendation: str
 
 
-class RadicalChallenge(BaseModel):
+class RadicalChallenge(StrictProviderOutput):
     evidence: str = Field(min_length=1)
     minimal_alternative: str = Field(min_length=1)
     trade_off: str = Field(min_length=1)
     residual_risk: str = Field(min_length=1)
 
 
-class ReviewOutput(BaseModel):
+class ReviewOutput(StrictProviderOutput):
     reviewer: str
     summary: str
     findings: list[Finding] = Field(default_factory=list)

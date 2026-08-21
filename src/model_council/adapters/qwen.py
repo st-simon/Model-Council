@@ -54,7 +54,9 @@ class QwenModelGateway:
             provider=PROVIDER,
             model_alias=model_alias,
             actual_model_id=self._resolve_model(model_alias),
-            structured_output=True,
+            json_mode=True,
+            json_schema_enforced=False,
+            local_schema_validation=True,
             prompt_cache=False,
             usage_reporting=True,
             request_id_reporting=True,
@@ -68,6 +70,33 @@ class QwenModelGateway:
 
     async def review(self, request: GatewayRequest) -> GatewayResponse:
         return await self._complete(request, repair=None)
+
+    async def probe_json_mode(
+        self,
+        *,
+        model_alias: str,
+        system: str,
+        user: str,
+        max_output_tokens: int,
+    ) -> GatewayResponse:
+        if not self._api_key:
+            raise ModelCallError(
+                "PROVIDER_CREDENTIAL_MISSING", CallErrorKind.AUTHENTICATION
+            )
+        model = self._resolve_model(model_alias)
+        return await self._send_payload(
+            {
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user},
+                ],
+                "response_format": {"type": "json_object"},
+                "enable_thinking": False,
+                "max_completion_tokens": max_output_tokens,
+                "stream": False,
+            }
+        )
 
     async def repair(
         self, request: GatewayRequest, raw_output: str, validation_error: str
@@ -88,6 +117,9 @@ class QwenModelGateway:
             )
         model_alias = request.model_alias or request.role
         payload = self._payload(request, self._resolve_model(model_alias), repair)
+        return await self._send_payload(payload)
+
+    async def _send_payload(self, payload: dict[str, object]) -> GatewayResponse:
         started = monotonic()
         try:
             response = await self._post(payload)
@@ -146,6 +178,7 @@ class QwenModelGateway:
                 {"role": "user", "content": user_content},
             ],
             "response_format": {"type": "json_object"},
+            "enable_thinking": False,
             "max_completion_tokens": request.max_output_tokens,
             "stream": False,
         }
@@ -171,7 +204,9 @@ class QwenModelGateway:
     def _parse_response(response: httpx.Response, latency_ms: int) -> GatewayResponse:
         try:
             body: Any = response.json()
-            raw_output = body["choices"][0]["message"]["content"]
+            choice = body["choices"][0]
+            finish_reason = choice["finish_reason"]
+            raw_output = choice["message"]["content"]
             actual_model_id = body["model"]
             usage = body["usage"]
             input_tokens = int(usage["prompt_tokens"])
@@ -190,6 +225,14 @@ class QwenModelGateway:
             raise ModelCallError(
                 "PROVIDER_INVALID_RESPONSE", CallErrorKind.INVALID_RESPONSE
             ) from error
+        if finish_reason == "length":
+            raise ModelCallError(
+                "PROVIDER_OUTPUT_TRUNCATED", CallErrorKind.INVALID_RESPONSE
+            )
+        if finish_reason != "stop":
+            raise ModelCallError(
+                "PROVIDER_INCOMPLETE_RESPONSE", CallErrorKind.INVALID_RESPONSE
+            )
         request_id = response.headers.get("x-request-id") or body.get("id")
         if (
             not isinstance(request_id, str)

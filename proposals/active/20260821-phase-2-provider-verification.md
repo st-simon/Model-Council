@@ -5,6 +5,7 @@
 - Date: 2026-08-21
 - Gate A approved: 2026-08-21 by Human Governor
 - Gate B approved: 2026-08-21 by Human Governor
+- Gate C approved: 2026-08-21 by Human Governor
 - Owner: Codex (Coordinator / Architect / Builder after approval)
 - Human governor: user
 - Depends on: verified Phase 1 proposal `20260818-model-council-mvp0`
@@ -464,7 +465,8 @@ Phase 2 is `verified` only when:
 
 ## State transition plan
 
-- Current: `implemented` — Phase 2B verified offline; Gate C not approved
+- Current: `implemented` — Gate C approved and guarded execution implemented
+  offline; live verification has not started
 - Gate A approval recorded on 2026-08-21
 - Gate B approval recorded on 2026-08-21
 - When Phase 2A implementation starts: `in_progress`
@@ -521,7 +523,23 @@ contract tests. `council verify-models` verifies the approved alias without
 credentials or a provider call. Checked-in policy remains `network_enabled:
 false`; no credential was read and no external model request was made.
 
-The proposal is `implemented` but not `verified`; Gate C remains pending.
+The proposal is `implemented` but not `verified`; Gate C live evidence remains
+pending.
+
+## Gate C preparation record
+
+An independent Gate C authorization packet was prepared on 2026-08-21 at
+`proposals/active/20260821-gate-c-qwen-live-verification.md`. It freezes a
+synthetic PUBLIC corpus and exact envelope hashes, limits the run to one JSON
+capability probe followed conditionally by one review, forbids retries, and sets
+explicit token, spend, time, stop, credential, and retention boundaries. Its
+status is `approved`. The Human Governor also approved capability-field
+splitting, strict provider-output models with `extra="forbid"`, and terminal
+`finish_reason` checks as implementation prerequisites. The guarded runner and
+offline tests are implemented; no credential has been read and no live provider
+request has been made. Execution remains conditional on a clean approved commit,
+the 2026-08-22 through 2026-08-28 JST window, and all console/credential
+preconditions.
 
 ## External-review disposition
 
@@ -539,11 +557,13 @@ The proposal is `implemented` but not `verified`; Gate C remains pending.
 | Phase 01-A/B/C renumbering | Rejected; retain the approved phase model | — |
 | Fixed semantic threshold or 50%–70% savings target | Rejected without workload evidence | — |
 
-## Open decisions required for Gate C
+## Gate C remaining execution conditions
 
-- What are the per-call, per-run, attempt, token, and spend ceilings?
-- Which frozen low-risk repository/commit or corpus hash is approved?
-- How long may local evidence be retained, and who deletes it?
+- Execute only from a clean, explicitly approved full commit SHA.
+- Confirm the dedicated key scope, disabled inference logging, and billing
+  access before the command reads credentials.
+- Execute only inside the approved window and revoke or delete the key after
+  reconciliation.
 
 ## References
 
@@ -561,8 +581,8 @@ The proposal is `implemented` but not `verified`; Gate C remains pending.
 
 ## Approval request
 
-**Gate A and Gate B were approved on 2026-08-21.** Phase 2A and the offline
-Phase 2B Qwen adapter are implemented. These approvals do not authorize
-credentials, network calls, repository-content egress, or provider spend. Gate C
-requires separate, explicit human-governor approval after its exact corpus,
-limits, budget, test window, and retention inputs are recorded.
+**Gate A, Gate B, and Gate C were approved on 2026-08-21.** Phase 2A, the
+offline Phase 2B Qwen adapter, and the guarded Gate C runner are implemented.
+Gate C live execution is authorized only under the independent packet's exact
+corpus, commit, endpoint, limits, budget, time window, console confirmations,
+and stop conditions. No live request has yet been made.

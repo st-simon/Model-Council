@@ -26,7 +26,9 @@ class FixtureModelGateway:
             provider="fixture",
             model_alias=model_alias,
             actual_model_id=f"{model_alias.replace('_', '-')}-v1",
-            structured_output=True,
+            json_mode=True,
+            json_schema_enforced=True,
+            local_schema_validation=True,
             prompt_cache=False,
             network_call_performed=False,
         )
