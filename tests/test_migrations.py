@@ -26,8 +26,9 @@ def test_migrations_upgrade_and_downgrade_phase_two_a(tmp_path: Path) -> None:
         "next_retry_at",
         "provider_request_id",
         "pricing_snapshot_id",
+        "provider_error_code",
     } <= {column["name"] for column in inspector.get_columns("call_attempts")}
-    assert {"provider_request_id", "pricing_snapshot_id"} <= {
+    assert {"provider_request_id", "pricing_snapshot_id", "provider_error_code"} <= {
         column["name"] for column in inspector.get_columns("calls")
     }
     assert {

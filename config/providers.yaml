@@ -10,7 +10,7 @@ providers:
       - PUBLIC
     region: cn-beijing
     endpoint_template: https://{workspace_id}.cn-beijing.maas.aliyuncs.com/compatible-mode/v1
-    credential_env: DASHSCOPE_API_KEY
+    credential_env: DASHSCOPE_PARENT_API_KEY
     workspace_id_env: DASHSCOPE_WORKSPACE_ID
     training_use: provider_states_not_used_for_training
     payload_retention: unknown

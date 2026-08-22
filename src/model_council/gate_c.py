@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import hashlib
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from time import monotonic
 
@@ -28,13 +28,13 @@ from model_council.models import (
 )
 from model_council.ports import ArtifactStore, RunStore
 
-AUTHORIZATION_ID = "20260822-gate-c-qwen-beijing-live-verification"
+AUTHORIZATION_ID = "20260823-gate-c-qwen-beijing-temporary-key-renewal"
 CORPUS_SHA256 = "b75768802f6ae6a93829cdd035e5a8f1ace2294bc2400902d4944029ec32c9a0"
 ENVELOPE_SHA256 = "7eb5638022bff718f1f9f70b59197c54dcdfb708178336f738f330de7524ee15"
 MODEL_ALIAS = "architect_primary_v1"
 MODEL_ID = "qwen3.7-max-2026-05-20"
 POLICY_VERSION = "qwen-beijing-public-v1"
-WINDOW_START = datetime(2026, 8, 22, 0, 0, tzinfo=UTC)  # 09:00 JST
+WINDOW_START = datetime(2026, 8, 24, 0, 0, tzinfo=UTC)  # 09:00 JST
 WINDOW_END = datetime(2026, 8, 28, 12, 0, tzinfo=UTC)  # 21:00 JST
 INPUT_TOKEN_LIMIT = 3_000
 OUTPUT_TOKEN_LIMIT = 2_048
@@ -136,12 +136,14 @@ class GateCRunner:
         artifact_store: ArtifactStore,
         guard: EgressGuard | None = None,
         now: datetime | None = None,
+        credential_expires_at: datetime,
     ) -> None:
         self.gateway = gateway
         self.run_store = run_store
         self.artifact_store = artifact_store
         self.guard = guard or EgressGuard()
         self.now = now or datetime.now(UTC)
+        self.credential_expires_at = credential_expires_at
         self.policy = gate_c_policy()
         self.responses: list[GatewayResponse] = []
 
@@ -149,7 +151,8 @@ class GateCRunner:
         started = monotonic()
         corpus = load_gate_c_corpus(corpus_path, self.guard)
         self._check_window()
-        run_id = "R-GATE-C-QWEN-BEIJING-001"
+        self._check_credential_lifetime()
+        run_id = "R-GATE-C-QWEN-BEIJING-002"
         review_input = ReviewInput(
             project_id="gate-c-qwen-beijing-public",
             run_id=run_id,
@@ -202,6 +205,15 @@ class GateCRunner:
     def _check_window(self) -> None:
         if not WINDOW_START <= self.now <= WINDOW_END:
             raise GateCStopped("AUTHORIZATION_WINDOW_CLOSED")
+
+    def _check_credential_lifetime(self) -> None:
+        remaining = self.credential_expires_at - self.now
+        if not (
+            timedelta(seconds=WALL_CLOCK_LIMIT_SECONDS)
+            <= remaining
+            <= timedelta(seconds=900)
+        ):
+            raise GateCStopped("TEMPORARY_KEY_LIFETIME_TOO_SHORT")
 
     async def _run_probe(self, review_input: ReviewInput, corpus: GateCCorpus) -> None:
         spec = corpus.capability_probe
@@ -356,7 +368,11 @@ class GateCRunner:
         self, request: GatewayRequest, attempt_id: int, error: ModelCallError
     ) -> None:
         self.run_store.finish_attempt_failure(
-            attempt_id, error.code, AttemptStatus.FAILED_TERMINAL
+            attempt_id,
+            error.code,
+            AttemptStatus.FAILED_TERMINAL,
+            provider_error_code=error.provider_error_code,
+            provider_request_id=error.provider_request_id,
         )
         self.run_store.save_failure(
             request.run_id,
@@ -364,9 +380,16 @@ class GateCRunner:
             error.code,
             retryable=False,
             max_attempts=1,
+            provider_error_code=error.provider_error_code,
+            provider_request_id=error.provider_request_id,
         )
         self._write_log(
-            request, None, CallStatus.FAILED_TERMINAL, error_code=error.code
+            request,
+            None,
+            CallStatus.FAILED_TERMINAL,
+            error_code=error.code,
+            provider_error_code=error.provider_error_code,
+            provider_request_id=error.provider_request_id,
         )
 
     def _record_invalid(
@@ -382,6 +405,8 @@ class GateCRunner:
         status: CallStatus,
         *,
         error_code: str | None = None,
+        provider_error_code: str | None = None,
+        provider_request_id: str | None = None,
     ) -> None:
         envelope = request.envelope
         if envelope is None:
@@ -409,13 +434,14 @@ class GateCRunner:
                 latency_ms=response.latency_ms if response else None,
                 cost_rmb=response.cost_rmb if response else None,
                 provider_request_id=(
-                    response.provider_request_id if response else None
+                    response.provider_request_id if response else provider_request_id
                 ),
                 pricing_snapshot_id=(
                     response.pricing_snapshot_id if response else None
                 ),
                 status=status,
                 error_code=error_code,
+                provider_error_code=provider_error_code,
             )
         )
 

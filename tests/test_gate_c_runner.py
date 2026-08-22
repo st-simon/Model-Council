@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import httpx
@@ -18,7 +18,7 @@ ALIAS = "architect_primary_v1"
 MODEL = "qwen3.7-max-2026-05-20"
 BASE_URL = "https://workspace.cn-beijing.maas.aliyuncs.com/compatible-mode/v1"
 CORPUS = Path("tests/fixtures/gate_c_qwen_public_corpus.json")
-IN_WINDOW = datetime(2026, 8, 22, 1, 0, tzinfo=UTC)
+IN_WINDOW = datetime(2026, 8, 24, 1, 0, tzinfo=UTC)
 
 
 def _provider_response(
@@ -65,6 +65,7 @@ def _runner(
             run_store=store,
             artifact_store=LocalArtifactStore(tmp_path),
             now=now,
+            credential_expires_at=now + timedelta(seconds=900),
         ),
         store,
         client,
@@ -98,7 +99,9 @@ def test_gate_c_runs_probe_then_review_once_and_persists_evidence(
         asyncio.run(client.aclose())
 
     assert result.state == RunState.COMPLETED
-    assert result.authorization_id == "20260822-gate-c-qwen-beijing-live-verification"
+    assert (
+        result.authorization_id == "20260823-gate-c-qwen-beijing-temporary-key-renewal"
+    )
     assert result.physical_requests == 2
     assert result.input_tokens == 100
     assert result.cost_rmb == pytest.approx(0.00156)
@@ -132,8 +135,8 @@ def test_gate_c_stops_after_invalid_probe_without_review(tmp_path: Path) -> None
         asyncio.run(client.aclose())
 
     assert requests == 1
-    assert store.load_state("R-GATE-C-QWEN-BEIJING-001") == RunState.FAILED
-    calls = store.list_calls("R-GATE-C-QWEN-BEIJING-001")
+    assert store.load_state("R-GATE-C-QWEN-BEIJING-002") == RunState.FAILED
+    calls = store.list_calls("R-GATE-C-QWEN-BEIJING-002")
     assert len(calls) == 1
     assert calls[0].status == CallStatus.INVALID
 
@@ -151,7 +154,7 @@ def test_gate_c_rejects_model_mismatch_as_invalid(tmp_path: Path) -> None:
     finally:
         asyncio.run(client.aclose())
 
-    calls = store.list_calls("R-GATE-C-QWEN-BEIJING-001")
+    calls = store.list_calls("R-GATE-C-QWEN-BEIJING-002")
     assert calls[0].status == CallStatus.INVALID
     assert calls[0].error_code == "ACTUAL_MODEL_ID_MISMATCH"
 
@@ -197,7 +200,7 @@ def test_gate_c_rejects_missing_evidence_or_observed_cache(
     finally:
         asyncio.run(client.aclose())
 
-    calls = store.list_calls("R-GATE-C-QWEN-BEIJING-001")
+    calls = store.list_calls("R-GATE-C-QWEN-BEIJING-002")
     assert len(calls) == 1
     assert calls[0].status == CallStatus.INVALID
     assert calls[0].error_code == error_code
@@ -223,11 +226,44 @@ def test_gate_c_stops_after_invalid_provider_usage(tmp_path: Path) -> None:
         asyncio.run(client.aclose())
 
     assert requests == 1
-    assert store.load_state("R-GATE-C-QWEN-BEIJING-001") == RunState.FAILED
-    calls = store.list_calls("R-GATE-C-QWEN-BEIJING-001")
+    assert store.load_state("R-GATE-C-QWEN-BEIJING-002") == RunState.FAILED
+    calls = store.list_calls("R-GATE-C-QWEN-BEIJING-002")
     assert len(calls) == 1
     assert calls[0].status == CallStatus.FAILED_TERMINAL
     assert calls[0].error_code == "PROVIDER_INVALID_RESPONSE"
+
+
+def test_gate_c_persists_only_sanitized_terminal_provider_error(
+    tmp_path: Path,
+) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            403,
+            json={
+                "code": "AccessDenied",
+                "message": "private provider diagnostic must not be retained",
+                "request_id": "req-safe-gate-c-403",
+            },
+        )
+
+    runner, store, client = _runner(tmp_path, httpx.MockTransport(handler))
+    try:
+        with pytest.raises(GateCStopped, match="PROVIDER_HTTP_403"):
+            asyncio.run(runner.execute(CORPUS))
+    finally:
+        asyncio.run(client.aclose())
+
+    call = store.list_calls("R-GATE-C-QWEN-BEIJING-002")[0]
+    attempt = store.list_attempts("R-GATE-C-QWEN-BEIJING-002")[0]
+    assert call.error_code == "PROVIDER_HTTP_403"
+    assert call.provider_error_code == "AccessDenied"
+    assert call.provider_request_id == "req-safe-gate-c-403"
+    assert attempt.provider_error_code == "AccessDenied"
+    assert attempt.provider_request_id == "req-safe-gate-c-403"
+    log = (tmp_path / "logs" / "council.jsonl").read_text(encoding="utf-8")
+    assert '"provider_error_code":"AccessDenied"' in log
+    assert '"provider_request_id":"req-safe-gate-c-403"' in log
+    assert "private provider diagnostic" not in log
 
 
 def test_gate_c_rejects_outside_window_before_any_provider_request(
@@ -247,6 +283,27 @@ def test_gate_c_rejects_outside_window_before_any_provider_request(
     )
     try:
         with pytest.raises(GateCStopped, match="AUTHORIZATION_WINDOW_CLOSED"):
+            asyncio.run(runner.execute(CORPUS))
+    finally:
+        asyncio.run(client.aclose())
+
+    assert requests == 0
+
+
+def test_gate_c_requires_temporary_key_to_outlive_the_runner_ceiling(
+    tmp_path: Path,
+) -> None:
+    requests = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal requests
+        requests += 1
+        return _provider_response('{"status":"ok"}', "req-probe")
+
+    runner, _store, client = _runner(tmp_path, httpx.MockTransport(handler))
+    runner.credential_expires_at = IN_WINDOW + timedelta(seconds=599)
+    try:
+        with pytest.raises(GateCStopped, match="TEMPORARY_KEY_LIFETIME_TOO_SHORT"):
             asyncio.run(runner.execute(CORPUS))
     finally:
         asyncio.run(client.aclose())

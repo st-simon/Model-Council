@@ -6,8 +6,8 @@ Security/Ops review is required for Model Council because later phases will
 handle provider credentials and potentially proprietary repository content.
 Phase 1 deliberately has no network or provider adapter and needs no secret.
 Phase 2A prepares the boundary offline. Phase 2B adds one Qwen adapter behind a
-checked-in network deny policy. Gate C is approved for one separately invoked,
-bounded live run, but no live provider request has yet been made.
+checked-in network deny policy. The first Beijing Gate C authorization made one
+bounded probe, received terminal HTTP 403, and is now consumed and blocked.
 
 ## Enforced Phase 1 boundary
 
@@ -63,7 +63,7 @@ bounded live run, but no live provider request has yet been made.
 - Provider errors are mapped to sanitized codes. Response bodies and credentials
   are excluded from routine logs.
 
-## Approved Gate C execution boundary
+## Consumed Gate C execution boundary
 
 - Authorization `20260822-gate-c-qwen-beijing-live-verification` permits only the frozen
   synthetic `PUBLIC` corpus and hashes recorded in the authorization packet.
@@ -89,6 +89,43 @@ bounded live run, but no live provider request has yet been made.
   evidence reconciliation. Local redacted evidence has a 30-day retention
   ceiling under Human Governor deletion ownership.
 
+This authorization made one failed probe and cannot authorize another request.
+No review call or retry occurred.
+
+## Implemented temporary-key renewal boundary
+
+The approved renewal removes the IP allowlist and replaces it with an exact-
+model parent Key, a 900-second temporary Key, the existing RMB 0.20 runner hard
+budget, and immediate parent-Key reset or deletion after reconciliation. The
+temporary Key inherits all parent permissions and cannot be revoked before its
+automatic expiry.
+
+- The CLI reads the parent only from `DASHSCOPE_PARENT_API_KEY` after Git,
+  corpus, policy, new-evidence-home, and Clash `127.0.0.1:7897` preflight.
+- One fixed token request targets only
+  `https://dashscope.aliyuncs.com/api/v1/tokens?expire_in_seconds=900`.
+- The credential factory passes only the returned `st-*` temporary Key to the
+  Beijing model adapter. Evidence records only its expiry and SHA-256
+  fingerprint.
+- A repository-local ignored authorization marker is created before token mint;
+  it makes a mint failure, crash, probe failure, or completed run consume the
+  authorization and prevents a second invocation.
+- Failed HTTP responses retain only the internal error, an explicitly
+  allowlisted Alibaba Cloud `code`, and a syntactically safe request ID in call,
+  attempt, and JSONL evidence. Provider messages and bodies are discarded.
+- A new run ID, `R-GATE-C-QWEN-BEIJING-002`, and a previously nonexistent home
+  are mandatory. Gate C runtime homes are ignored by Git.
+- The earlier proxy-failure evidence was proven to contain no provider/model,
+  request ID, usage, cost, or output data, then atomically reconciled from
+  `BLIND_REVIEW_RUNNING` to `FAILED` with
+  `LOCAL_PROXY_PREFLIGHT_FAILED`. No provider request was made.
+
+Alibaba Cloud does not provide a per-Key amount or token hard cap. The approved
+RMB 1.00 provider cost threshold is advisory only. When available with
+sufficient remaining quota, `free tier exhausted stop` is the provider-side
+automatic spending stop. These controls are implemented and verified offline;
+they do not authorize a provider request without later clean-SHA approval.
+
 ## Known residual risks
 
 - Evidence artifacts may contain proprietary source supplied by the operator.
@@ -105,16 +142,14 @@ bounded live run, but no live provider request has yet been made.
   period.
 - A timeout may have incurred cost even without a usable response; Gate C never
   retries that ambiguous outcome.
-- Actual endpoint routing, billing evidence, model identity, usage reporting,
-  and JSON-mode reliability remain unverified until the authorized live run.
+- Model identity, usage reporting, billing reconciliation, and JSON-mode
+  reliability remain unverified after the terminal 403 probe.
 
 ## Gate C status
 
-The Human Governor superseded the unused Tokyo authorization and approved the
-Beijing `cn-beijing` replacement on 2026-08-22; all other Gate C limits and the
-three supplementary model-risk controls remain in force. The runner is
-implemented and mock-tested offline. Live
-execution must not begin before 2026-08-22 09:00 JST or after 2026-08-28 21:00
-JST, and it must originate from a clean implementation commit separately named
-to the command. Scanner, console, credential, policy, or evidence uncertainty
-fails closed.
+The Beijing authorization made one probe on 2026-08-23, received HTTP 403, and
+stopped without a review or retry. Its Key must be revoked and its authorization
+cannot be reused. The temporary-key renewal without an IP allowlist is
+implemented and offline-verified, but renewed live execution remains
+unauthorized until the Human Governor approves the clean implementation SHA and
+confirms the execution prerequisites.

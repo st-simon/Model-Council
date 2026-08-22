@@ -1,7 +1,7 @@
 # Model Council Phase 2 — Provider Verification and Guarded Live Review
 
 - Proposal ID: `20260821-phase-2-provider-verification`
-- Status: `implemented`
+- Status: `blocked`
 - Date: 2026-08-21
 - Gate A approved: 2026-08-21 by Human Governor
 - Gate B approved: 2026-08-21 by Human Governor
@@ -466,8 +466,8 @@ Phase 2 is `verified` only when:
 
 ## State transition plan
 
-- Current: `implemented` — Beijing Gate C replacement approved and guarded
-  execution implemented offline; live verification has not started
+- Current: `blocked` — one Beijing Gate C probe returned terminal HTTP 403; the
+  consumed authorization cannot be resumed
 - Gate A approval recorded on 2026-08-21
 - Gate B approval recorded on 2026-08-21
 - When Phase 2A implementation starts: `in_progress`
@@ -524,8 +524,8 @@ contract tests. `council verify-models` verifies the approved alias without
 credentials or a provider call. Checked-in policy remains `network_enabled:
 false`; no credential was read and no external model request was made.
 
-The proposal is `implemented` but not `verified`; Gate C live evidence remains
-pending.
+The proposal is `blocked` and not `verified`. One governed Gate C probe reached
+the provider, returned terminal HTTP 403, and stopped without review or retry.
 
 ### Beijing replacement record
 
@@ -536,6 +536,19 @@ RMB 0.20 hard budget, execution window, and retention rules. The replacement
 authorization is
 `proposals/active/20260822-gate-c-qwen-beijing-live-verification.md`. The Tokyo
 packet remains an audit record and cannot authorize a request.
+
+The Beijing authorization made one probe on 2026-08-23 at 00:23 JST and received
+HTTP 403. It retained no usage, cost, safe request ID, or provider error code
+beyond the HTTP status. Its authorization is consumed and its dedicated Key
+must be revoked or reset.
+
+A second independent proposal at
+`proposals/active/20260823-gate-c-qwen-beijing-temporary-key-renewal.md`
+was approved and removes the IP allowlist in exchange for a 900-second temporary Key,
+exact parent-Key model scope, the existing runner hard budget, and diagnostic
+hardening. Its implementation and offline verification are complete; it does
+not authorize a request until the clean implementation SHA is separately
+approved.
 
 ## Gate C preparation record
 
@@ -548,10 +561,8 @@ Tokyo status is now `superseded`; the Beijing replacement is `approved`. The
 Human Governor also approved capability-field
 splitting, strict provider-output models with `extra="forbid"`, and terminal
 `finish_reason` checks as implementation prerequisites. The guarded runner and
-offline tests are implemented; no credential has been read and no live provider
-request has been made. Execution remains conditional on a clean approved commit,
-the 2026-08-22 through 2026-08-28 JST window, and all console/credential
-preconditions.
+offline tests were implemented before the governed probe. The probe failed
+terminally and the authorization cannot be reused.
 
 ## External-review disposition
 
@@ -571,11 +582,9 @@ preconditions.
 
 ## Gate C remaining execution conditions
 
-- Execute only from a clean, explicitly approved full commit SHA.
-- Confirm the dedicated key scope, disabled inference logging, and billing
-  access before the command reads credentials.
-- Execute only inside the approved window and revoke or delete the key after
-  reconciliation.
+- Confirm the failed dedicated Key was revoked or reset.
+- Produce a clean implementation commit after the now-green offline checks.
+- Separately approve the full renewed implementation SHA before any request.
 
 ## References
 
@@ -593,9 +602,8 @@ preconditions.
 
 ## Approval request
 
-**Gate A and Gate B were approved on 2026-08-21; the Gate C Beijing replacement
-was approved on 2026-08-22.** Phase 2A, the offline Phase 2B Qwen adapter, and
-the guarded Gate C runner are implemented. Gate C live execution is authorized
-only under the Beijing packet's exact
-corpus, commit, endpoint, limits, budget, time window, console confirmations,
-and stop conditions. No live request has yet been made.
+**Gate A and Gate B were approved on 2026-08-21; the first Beijing Gate C packet
+was approved on 2026-08-22 and consumed by one terminal 403 probe on
+2026-08-23.** No further live request is authorized. The temporary-key renewal
+is approved and implemented offline; it still requires a clean implementation
+commit and later full-SHA approval.

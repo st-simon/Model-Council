@@ -1,12 +1,14 @@
 # Gate C — Qwen Beijing Guarded Live Verification Authorization
 
 - Authorization ID: `20260822-gate-c-qwen-beijing-live-verification`
-- Status: `implemented` (approved and verified offline; no live request made)
+- Status: `blocked` (authorization consumed by one terminal 403 probe)
 - Date approved: 2026-08-22 by Human Governor
 - Parent proposal: `20260821-phase-2-provider-verification`
 - Supersedes: `20260821-gate-c-qwen-live-verification`
 - Decision owner: Human Governor
 - Executor after clean-commit approval: Codex
+- Live attempt: 2026-08-23 00:23 JST
+- Renewal proposal: `20260823-gate-c-qwen-beijing-temporary-key-renewal`
 
 ## Background
 
@@ -19,6 +21,20 @@ retention boundary.
 
 The Tokyo packet remains as a superseded audit record. Its authorization ID,
 endpoint, policy version, pricing, and corpus hashes cannot be used for Beijing.
+
+## Execution record
+
+The approved Beijing runner made one capability-probe request on 2026-08-23 at
+00:23 JST. Alibaba Cloud returned HTTP 403. The runner classified the result as
+terminal, made no review request, performed no retry, and transitioned the run
+to `FAILED`. No token usage, cost, provider request ID, or provider error code
+beyond the HTTP status was available in retained evidence.
+
+This authorization is consumed and cannot authorize another request. The
+dedicated key must be revoked or reset. A separate local proxy failure record
+was preserved and later reconciled to terminal
+`LOCAL_PROXY_PREFLIGHT_FAILED` after confirming it contained no provider
+evidence. It does not authorize resumption of either failed state.
 
 ## Purpose
 
@@ -193,11 +209,9 @@ ceiling, native RMB cost, zero retry, and authorization window enforcement.
 
 ## State transition plan
 
-- Current: `implemented` — exact migration verified offline; no live request made.
-- After offline implementation and verification: `implemented`.
-- When the first approved Beijing request starts: live execution `in_progress`.
-- After evidence reconciliation and key revocation: `verified` or `blocked`.
-- Expired unused after 2026-08-28 21:00 JST: `blocked` pending renewed approval.
+- Current: `blocked` — one terminal 403 probe consumed the authorization.
+- Final: remain `blocked` as an immutable execution record.
+- Any further request requires a new authorization ID, run ID, and clean commit.
 
 ## Execution window and retention
 

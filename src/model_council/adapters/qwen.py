@@ -7,6 +7,10 @@ from typing import Any
 
 import httpx
 
+from model_council.adapters.qwen_errors import (
+    classify_http_error,
+    sanitized_error_evidence,
+)
 from model_council.models import (
     CallErrorKind,
     GatewayRequest,
@@ -188,17 +192,13 @@ class QwenModelGateway:
         if response.is_success:
             return
         status = response.status_code
-        if status in {401, 403}:
-            kind = CallErrorKind.AUTHENTICATION
-        elif status == 429:
-            kind = CallErrorKind.THROTTLED
-        elif status in {408, 409, 425} or status >= 500:
-            kind = CallErrorKind.TRANSIENT
-        elif 400 <= status < 500:
-            kind = CallErrorKind.INVALID_REQUEST
-        else:
-            kind = CallErrorKind.PERMANENT
-        raise ModelCallError(f"PROVIDER_HTTP_{status}", kind)
+        provider_code, request_id = sanitized_error_evidence(response)
+        raise ModelCallError(
+            f"PROVIDER_HTTP_{status}",
+            classify_http_error(status),
+            provider_error_code=provider_code,
+            provider_request_id=request_id,
+        )
 
     @staticmethod
     def _parse_response(response: httpx.Response, latency_ms: int) -> GatewayResponse:

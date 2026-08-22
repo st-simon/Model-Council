@@ -235,6 +235,30 @@ def test_http_errors_are_sanitized_and_classified(
     assert "secret provider response body" not in str(caught.value)
 
 
+def test_http_error_exposes_only_allowlisted_provider_evidence() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            403,
+            json={
+                "code": "AccessDenied",
+                "message": "discard this private provider explanation",
+                "request_id": "req-safe-403",
+            },
+        )
+
+    gateway, client = _gateway(httpx.MockTransport(handler))
+    try:
+        with pytest.raises(ModelCallError) as caught:
+            asyncio.run(gateway.review(_request()))
+    finally:
+        asyncio.run(client.aclose())
+
+    assert caught.value.code == "PROVIDER_HTTP_403"
+    assert caught.value.provider_error_code == "AccessDenied"
+    assert caught.value.provider_request_id == "req-safe-403"
+    assert "private provider explanation" not in str(caught.value)
+
+
 @pytest.mark.parametrize(
     ("error_type", "code", "kind"),
     [

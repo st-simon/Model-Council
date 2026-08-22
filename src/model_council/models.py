@@ -63,11 +63,18 @@ class CallErrorKind(StrEnum):
 
 class ModelCallError(RuntimeError):
     def __init__(
-        self, code: str, kind: CallErrorKind = CallErrorKind.PERMANENT
+        self,
+        code: str,
+        kind: CallErrorKind = CallErrorKind.PERMANENT,
+        *,
+        provider_error_code: str | None = None,
+        provider_request_id: str | None = None,
     ) -> None:
         super().__init__(code)
         self.code = code
         self.kind = kind
+        self.provider_error_code = provider_error_code
+        self.provider_request_id = provider_request_id
 
     @property
     def retryable(self) -> bool:
@@ -269,6 +276,7 @@ class StoredCall(BaseModel):
     context_hash: str
     output: ReviewOutput | None = None
     error_code: str | None = None
+    provider_error_code: str | None = None
     provider: str | None = None
     actual_model_id: str | None = None
     input_tokens: int | None = None
@@ -289,6 +297,7 @@ class StoredAttempt(BaseModel):
     kind: AttemptKind
     status: AttemptStatus
     error_code: str | None = None
+    provider_error_code: str | None = None
     provider: str | None = None
     actual_model_id: str | None = None
     input_tokens: int | None = None
@@ -334,3 +343,4 @@ class CallLogEvent(BaseModel):
     pricing_snapshot_id: str | None = None
     status: CallStatus
     error_code: str | None = None
+    provider_error_code: str | None = None

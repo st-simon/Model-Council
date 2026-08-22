@@ -11,6 +11,7 @@ from sqlalchemy import (
     UniqueConstraint,
     create_engine,
     select,
+    text,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
 
@@ -63,6 +64,7 @@ class CallRow(Base):
     status: Mapped[str] = mapped_column(String(30))
     output_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     error_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    provider_error_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
     provider: Mapped[str | None] = mapped_column(String(100), nullable=True)
     actual_model_id: Mapped[str | None] = mapped_column(String(200), nullable=True)
     input_tokens: Mapped[int | None] = mapped_column(nullable=True)
@@ -88,6 +90,7 @@ class CallAttemptRow(Base):
     kind: Mapped[str] = mapped_column(String(30))
     status: Mapped[str] = mapped_column(String(30))
     error_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    provider_error_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
     provider: Mapped[str | None] = mapped_column(String(100), nullable=True)
     actual_model_id: Mapped[str | None] = mapped_column(String(200), nullable=True)
     input_tokens: Mapped[int | None] = mapped_column(nullable=True)
@@ -260,6 +263,9 @@ class SQLiteRunStore:
         attempt_id: int,
         error_code: str,
         status: AttemptStatus,
+        *,
+        provider_error_code: str | None = None,
+        provider_request_id: str | None = None,
     ) -> None:
         if status not in {
             AttemptStatus.RETRY_WAIT,
@@ -274,6 +280,8 @@ class SQLiteRunStore:
                 raise KeyError(attempt_id)
             row.status = status.value
             row.error_code = error_code
+            row.provider_error_code = provider_error_code
+            row.provider_request_id = provider_request_id
             row.finished_at = datetime.now(UTC)
             row.next_retry_at = (
                 datetime.now(UTC) if status == AttemptStatus.RETRY_WAIT else None
@@ -311,6 +319,9 @@ class SQLiteRunStore:
         error_code: str,
         retryable: bool = False,
         max_attempts: int = 1,
+        *,
+        provider_error_code: str | None = None,
+        provider_request_id: str | None = None,
     ) -> None:
         with Session(self.engine) as session:
             row = session.scalar(
@@ -330,6 +341,8 @@ class SQLiteRunStore:
                 else CallStatus.FAILED_TERMINAL.value
             )
             row.error_code = error_code
+            row.provider_error_code = provider_error_code
+            row.provider_request_id = provider_request_id
             session.commit()
 
     def save_invalid(self, run_id: str, role: str, error_code: str) -> None:
@@ -399,6 +412,104 @@ class SQLiteRunStore:
                 raise KeyError(run_id)
             return RunState(row.state)
 
+    def reconcile_preprovider_failure(self, run_id: str, error_code: str) -> bool:
+        """Atomically close one legacy attempt proven not to have reached a provider."""
+        if error_code != "LOCAL_PROXY_PREFLIGHT_FAILED":
+            raise ValueError("unsupported reconciliation error code")
+        statement = text(
+            "SELECT r.state AS run_state, c.call_id, c.status AS call_status, "
+            "c.error_code AS call_error_code, c.provider AS call_provider, "
+            "c.actual_model_id AS call_model, c.input_tokens AS call_input, "
+            "c.output_tokens AS call_output, c.cost_rmb AS call_cost, "
+            "c.provider_request_id AS call_request_id, c.output_json, "
+            "a.attempt_id, a.status AS attempt_status, "
+            "a.error_code AS attempt_error_code, a.provider AS attempt_provider, "
+            "a.actual_model_id AS attempt_model, a.input_tokens AS attempt_input, "
+            "a.output_tokens AS attempt_output, a.cost_rmb AS attempt_cost, "
+            "a.provider_request_id AS attempt_request_id "
+            "FROM runs r JOIN calls c ON c.run_id = r.run_id "
+            "JOIN call_attempts a ON a.call_id = c.call_id "
+            "WHERE r.run_id = :run_id"
+        )
+        with self.engine.begin() as connection:
+            rows = connection.execute(statement, {"run_id": run_id}).mappings().all()
+            if len(rows) != 1:
+                raise ValueError("expected exactly one legacy call attempt")
+            row = rows[0]
+            evidence_fields = (
+                "call_provider",
+                "call_model",
+                "call_input",
+                "call_output",
+                "call_cost",
+                "call_request_id",
+                "output_json",
+                "attempt_provider",
+                "attempt_model",
+                "attempt_input",
+                "attempt_output",
+                "attempt_cost",
+                "attempt_request_id",
+            )
+            if any(row[field] is not None for field in evidence_fields):
+                raise ValueError("not an untouched pre-provider attempt")
+            already_closed = (
+                row["run_state"] == RunState.FAILED.value
+                and row["call_status"] == CallStatus.FAILED_TERMINAL.value
+                and row["attempt_status"] == AttemptStatus.FAILED_TERMINAL.value
+                and row["call_error_code"] == error_code
+                and row["attempt_error_code"] == error_code
+            )
+            if already_closed:
+                return False
+            if (
+                row["run_state"] != RunState.BLIND_REVIEW_RUNNING.value
+                or row["call_status"] != CallStatus.RUNNING.value
+                or row["attempt_status"] != AttemptStatus.RUNNING.value
+            ):
+                raise ValueError("legacy attempt is not in the expected running state")
+            finished_at = datetime.now(UTC).isoformat()
+            connection.execute(
+                text(
+                    "UPDATE call_attempts SET status = :status, "
+                    "error_code = :error_code, finished_at = :finished_at "
+                    "WHERE attempt_id = :attempt_id"
+                ),
+                {
+                    "status": AttemptStatus.FAILED_TERMINAL.value,
+                    "error_code": error_code,
+                    "finished_at": finished_at,
+                    "attempt_id": row["attempt_id"],
+                },
+            )
+            connection.execute(
+                text(
+                    "UPDATE calls SET status = :status, error_code = :error_code "
+                    "WHERE call_id = :call_id"
+                ),
+                {
+                    "status": CallStatus.FAILED_TERMINAL.value,
+                    "error_code": error_code,
+                    "call_id": row["call_id"],
+                },
+            )
+            connection.execute(
+                text("UPDATE runs SET state = :state WHERE run_id = :run_id"),
+                {"state": RunState.FAILED.value, "run_id": run_id},
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO run_transitions (run_id, from_state, to_state) "
+                    "VALUES (:run_id, :from_state, :to_state)"
+                ),
+                {
+                    "run_id": run_id,
+                    "from_state": RunState.BLIND_REVIEW_RUNNING.value,
+                    "to_state": RunState.FAILED.value,
+                },
+            )
+            return True
+
     @staticmethod
     def _stored_call(row: CallRow) -> StoredCall:
         output = (
@@ -414,6 +525,7 @@ class SQLiteRunStore:
             context_hash=row.context_hash,
             output=output,
             error_code=row.error_code,
+            provider_error_code=row.provider_error_code,
             provider=row.provider,
             actual_model_id=row.actual_model_id,
             input_tokens=row.input_tokens,
@@ -436,6 +548,7 @@ class SQLiteRunStore:
             kind=AttemptKind(row.kind),
             status=AttemptStatus(row.status),
             error_code=row.error_code,
+            provider_error_code=row.provider_error_code,
             provider=row.provider,
             actual_model_id=row.actual_model_id,
             input_tokens=row.input_tokens,

@@ -110,3 +110,26 @@
   validation.
 - Reason: the available account must use the China-site Beijing service; a
   single-region allowlist minimizes accidental cross-region egress.
+
+## D-011 — Proposed temporary-key replacement for IP allowlisting
+
+- Status: accepted and implemented offline on 2026-08-23; renewed live
+  execution still requires clean-SHA approval
+- Decision requested: remove the API Key IP allowlist and instead mint a
+  900-second temporary Key from an exact-model Beijing parent Key. Keep the
+  frozen `PUBLIC` corpus, two-inference-request ceiling, zero retry, and RMB 0.20
+  runner hard budget.
+- Provider limitation: temporary Keys cannot be manually deleted before expiry
+  and inherit all parent-Key permissions. Alibaba Cloud cost thresholds notify
+  but do not impose a per-Key hard stop.
+- Additional controls: keep the parent Key out of the model adapter, reset or
+  delete it immediately after reconciliation, use free-tier exhausted stop when
+  available, and retain only allowlisted provider error codes and safe request
+  IDs.
+- Gate boundary: implementation and offline verification are authorized. A
+  renewed provider request is not authorized until the Human Governor approves
+  the clean implementation SHA.
+- Implementation record: the parent-to-temporary credential factory, fixed
+  900-second token endpoint, one-shot authorization marker, sanitized provider
+  error evidence, new run/home boundary, proxy preflight, and legacy local
+  failure reconciliation are complete and covered by offline tests.

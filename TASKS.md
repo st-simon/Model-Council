@@ -25,7 +25,7 @@ M1 — Offline blind-review kernel
 - [x] Add partial failure, schema repair, quorum, resume, and idempotency.
 - [x] Export a raw council report and run full Phase 1 verification.
 
-## Current milestone — Gate C approved; live verification pending
+## Current milestone — Gate C blocked; temporary-key renewal implemented offline
 
 M2 — Provider verification and guarded live review. The independent proposal
 `20260821-phase-2-provider-verification` received Gate A approval on 2026-08-21.
@@ -34,8 +34,11 @@ approved on 2026-08-21 and the Qwen adapter was verified against mock transport.
 Gate C and its three supplementary model-risk controls were approved on
 2026-08-21. The unused Tokyo authorization was superseded on 2026-08-22 by an
 approved Alibaba Cloud China Model Studio Beijing (`cn-beijing`) authorization.
-The guarded runner is implemented offline; do not execute it outside
-the exact commit, console, credential, window, corpus, and limit conditions.
+The guarded runner made one terminal HTTP 403 probe on 2026-08-23, then stopped
+without review or retry. That authorization is consumed. A replacement proposal
+removes the IP allowlist and adds a 900-second temporary Key plus diagnostic and
+evidence hardening. It was approved for implementation on 2026-08-23; renewed
+live execution remains separately gated.
 
 - [x] Split role, logical-model, provider, and prompt configuration.
 - [x] Add canonical versioned prompt envelopes and challenger output contract.
@@ -79,5 +82,15 @@ the exact commit, console, credential, window, corpus, and limit conditions.
 - [x] Cover transport, finish reason, request ID, cache, repair, alias, envelope,
   egress-policy, and per-call attempt-ceiling boundaries.
 - [x] Synchronize README and Security/Ops status language.
-- [ ] Clean-commit offline preflight immediately before live execution.
-- [ ] Authorized live execution within the approved window.
+- [x] Execute one approved probe; stop terminally on HTTP 403.
+- [ ] Confirm the failed dedicated Key was revoked or reset.
+- [x] Approve
+  `20260823-gate-c-qwen-beijing-temporary-key-renewal`.
+- [x] Implement allowlisted provider error evidence and a safe Gate C evidence
+  home.
+- [x] Implement a 900-second temporary-Key mint boundary without exposing the
+  parent Key to the model adapter.
+- [x] Reconcile the abandoned local proxy-failure attempt to a documented
+  terminal pre-provider failure without a network request.
+- [ ] Clean-commit offline preflight before any renewed live execution.
+- [ ] Separately approve the renewed implementation SHA.

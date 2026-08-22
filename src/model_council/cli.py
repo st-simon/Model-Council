@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import re
+import socket
 import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
@@ -16,6 +17,7 @@ import yaml
 from model_council.adapters.artifacts import LocalArtifactStore
 from model_council.adapters.fixture import FixtureModelGateway
 from model_council.adapters.qwen import QwenModelGateway
+from model_council.adapters.qwen_tokens import QwenTemporaryKeyIssuer
 from model_council.adapters.routing import RoutingModelGateway
 from model_council.adapters.sqlite import SQLiteRunStore
 from model_council.application import CouncilApplication
@@ -31,7 +33,7 @@ from model_council.gate_c import (
     GateCStopped,
     load_gate_c_corpus,
 )
-from model_council.models import ReviewInput
+from model_council.models import ModelCallError, ReviewInput
 from model_council.ports import ModelGateway
 from model_council.prompting import PromptBuilder
 
@@ -41,6 +43,14 @@ FULL_COMMIT_SHA = re.compile(r"^[0-9a-f]{40}$")
 GATE_C_ENDPOINT_TEMPLATE = (
     "https://{workspace_id}.cn-beijing.maas.aliyuncs.com/compatible-mode/v1"
 )
+GATE_C_PROXY_ENV = {
+    "HTTP_PROXY": "http://127.0.0.1:7897",
+    "HTTPS_PROXY": "http://127.0.0.1:7897",
+    "http_proxy": "http://127.0.0.1:7897",
+    "https_proxy": "http://127.0.0.1:7897",
+    "ALL_PROXY": "socks5://127.0.0.1:7897",
+    "all_proxy": "socks5://127.0.0.1:7897",
+}
 
 
 @app.callback()
@@ -171,6 +181,45 @@ def _gate_c_git_preflight(repo_root: Path, approved_commit: str) -> None:
         raise GateCStopped("WORKTREE_NOT_CLEAN")
 
 
+def _gate_c_proxy_preflight() -> None:
+    if any(os.environ.get(name) != value for name, value in GATE_C_PROXY_ENV.items()):
+        raise GateCStopped("PROXY_ENVIRONMENT_CHANGED")
+    try:
+        connection = socket.create_connection(("127.0.0.1", 7897), timeout=1.0)
+    except OSError:
+        raise GateCStopped("PROXY_LISTENER_UNREACHABLE") from None
+    connection.close()
+
+
+def _gate_c_evidence_home_preflight(home: Path) -> None:
+    if home.exists():
+        raise GateCStopped("EVIDENCE_HOME_ALREADY_EXISTS")
+
+
+def _gate_c_claim_authorization(repo_root: Path, now: datetime) -> Path:
+    marker = (
+        repo_root / ".model-council" / "authorizations" / f"{AUTHORIZATION_ID}.json"
+    )
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with marker.open("x", encoding="utf-8") as stream:
+            stream.write(
+                json.dumps(
+                    {
+                        "authorization_id": AUTHORIZATION_ID,
+                        "claimed_at": now.isoformat(),
+                        "status": "TOKEN_MINT_STARTED",
+                    },
+                    indent=2,
+                    sort_keys=True,
+                )
+                + "\n"
+            )
+    except FileExistsError:
+        raise GateCStopped("AUTHORIZATION_ALREADY_CONSUMED") from None
+    return marker
+
+
 def _gate_c_config_preflight(config_dir: Path) -> tuple[str, str]:
     config = load_runtime_config(config_dir)
     model = config.resolve_model(MODEL_ALIAS)
@@ -192,7 +241,7 @@ def _gate_c_config_preflight(config_dir: Path) -> tuple[str, str]:
         or provider.allowed_data_classes != ["PUBLIC"]
         or provider.region != "cn-beijing"
         or provider.endpoint_template != GATE_C_ENDPOINT_TEMPLATE
-        or provider.credential_env != "DASHSCOPE_API_KEY"
+        or provider.credential_env != "DASHSCOPE_PARENT_API_KEY"
         or provider.workspace_id_env != "DASHSCOPE_WORKSPACE_ID"
         or provider.training_use != "provider_states_not_used_for_training"
         or provider.payload_retention != "unknown"
@@ -213,6 +262,10 @@ def gate_c_qwen(
     confirm_inference_logging_disabled: Annotated[bool, typer.Option()] = False,
     confirm_billing_access: Annotated[bool, typer.Option()] = False,
     confirm_offline_suite_passed: Annotated[bool, typer.Option()] = False,
+    confirm_failed_key_revoked: Annotated[bool, typer.Option()] = False,
+    confirm_cost_alert_advisory: Annotated[bool, typer.Option()] = False,
+    confirm_free_tier_stop: Annotated[bool, typer.Option()] = False,
+    confirm_free_tier_unavailable_disclosed: Annotated[bool, typer.Option()] = False,
     corpus: Annotated[
         Path, typer.Option(exists=True, readable=True, dir_okay=False)
     ] = Path("tests/fixtures/gate_c_qwen_public_corpus.json"),
@@ -227,6 +280,9 @@ def gate_c_qwen(
         and confirm_inference_logging_disabled
         and confirm_billing_access
         and confirm_offline_suite_passed
+        and confirm_failed_key_revoked
+        and confirm_cost_alert_advisory
+        and (confirm_free_tier_stop ^ confirm_free_tier_unavailable_disclosed)
     )
     if authorization_id != AUTHORIZATION_ID:
         raise typer.BadParameter("authorization ID does not match Gate C approval")
@@ -246,24 +302,18 @@ def gate_c_qwen(
     try:
         endpoint_template, region = _gate_c_config_preflight(config_dir)
         load_gate_c_corpus(corpus)
+        _gate_c_proxy_preflight()
+        _gate_c_evidence_home_preflight(home)
     except GateCStopped as error:
         raise typer.BadParameter(f"Policy preflight failed: {error}") from None
     preflight_path = home / "gate-c-preflight.json"
-    if preflight_path.exists():
-        raise typer.BadParameter("Gate C home already contains a preflight record")
-    api_key = os.environ.get("DASHSCOPE_API_KEY")
+    parent_api_key = os.environ.get("DASHSCOPE_PARENT_API_KEY")
     workspace_id = os.environ.get("DASHSCOPE_WORKSPACE_ID")
-    if not api_key:
-        raise typer.BadParameter("DASHSCOPE_API_KEY is missing")
+    if not parent_api_key:
+        raise typer.BadParameter("DASHSCOPE_PARENT_API_KEY is missing")
     if not workspace_id or SAFE_WORKSPACE_ID.fullmatch(workspace_id) is None:
         raise typer.BadParameter("DASHSCOPE_WORKSPACE_ID is missing or invalid")
     endpoint = endpoint_template.format(workspace_id=workspace_id)
-    gateway = QwenModelGateway(
-        alias_to_model={MODEL_ALIAS: MODEL_ID},
-        base_url=endpoint,
-        api_key=api_key,
-        region=region,
-    )
     home.mkdir(parents=True, exist_ok=True)
     endpoint_hash = hashlib.sha256(endpoint.encode()).hexdigest()
     with preflight_path.open("x", encoding="utf-8") as stream:
@@ -274,23 +324,75 @@ def gate_c_qwen(
                     "approved_commit": approved_commit,
                     "checked_at": now.isoformat(),
                     "endpoint_sha256": endpoint_hash,
+                    "proxy_listener": "127.0.0.1:7897",
                 },
                 indent=2,
                 sort_keys=True,
             )
             + "\n"
         )
+    try:
+        _gate_c_claim_authorization(repo_root, datetime.now(UTC))
+    except GateCStopped as error:
+        raise typer.BadParameter(f"Authorization preflight failed: {error}") from None
+    issuer = QwenTemporaryKeyIssuer()
+    try:
+        gateway, minted = asyncio.run(
+            issuer.mint_gateway(
+                parent_api_key,
+                alias_to_model={MODEL_ALIAS: MODEL_ID},
+                base_url=endpoint,
+                region=region,
+                now=datetime.now(UTC),
+            )
+        )
+    except ModelCallError as error:
+        (home / "gate-c-token-mint-failure.json").write_text(
+            json.dumps(
+                {
+                    "authorization_id": AUTHORIZATION_ID,
+                    "error_code": error.code,
+                    "provider_error_code": error.provider_error_code,
+                    "provider_request_id": error.provider_request_id,
+                },
+                indent=2,
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        typer.echo(f"Gate C token mint stopped: {error.code}", err=True)
+        typer.echo("Reset or delete the parent API key now.", err=True)
+        raise typer.Exit(code=1) from error
+    finally:
+        del parent_api_key
+    (home / "gate-c-temporary-key.json").write_text(
+        json.dumps(
+            {
+                "authorization_id": AUTHORIZATION_ID,
+                **minted.evidence(),
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    runner_now = datetime.now(UTC)
     runner = GateCRunner(
         gateway=gateway,
         run_store=SQLiteRunStore(home / "council.db"),
         artifact_store=LocalArtifactStore(home),
-        now=now,
+        now=runner_now,
+        credential_expires_at=minted.expires_at,
     )
     try:
         result = asyncio.run(runner.execute(corpus))
     except GateCStopped as error:
         typer.echo(f"Gate C stopped: {error}", err=True)
-        typer.echo("Revoke or delete the Gate C API key now.", err=True)
+        typer.echo("Reset or delete the parent API key now.", err=True)
+        typer.echo("The temporary API key will expire automatically.", err=True)
         raise typer.Exit(code=1) from error
     typer.echo(result.model_dump_json())
-    typer.echo("Revoke or delete the Gate C API key now.", err=True)
+    typer.echo("Reset or delete the parent API key now.", err=True)
+    typer.echo("The temporary API key will expire automatically.", err=True)

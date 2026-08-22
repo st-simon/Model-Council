@@ -16,3 +16,5 @@ build/
 *.sqlite
 *.sqlite3
 .model-council/
+.model-council-gate-c/
+.model-council-gate-c-*/

@@ -59,6 +59,9 @@ class RunStore(Protocol):
         attempt_id: int,
         error_code: str,
         status: AttemptStatus,
+        *,
+        provider_error_code: str | None = None,
+        provider_request_id: str | None = None,
     ) -> None: ...
 
     def save_failure(
@@ -68,6 +71,9 @@ class RunStore(Protocol):
         error_code: str,
         retryable: bool,
         max_attempts: int,
+        *,
+        provider_error_code: str | None = None,
+        provider_request_id: str | None = None,
     ) -> None: ...
 
     def save_invalid(self, run_id: str, role: str, error_code: str) -> None: ...
