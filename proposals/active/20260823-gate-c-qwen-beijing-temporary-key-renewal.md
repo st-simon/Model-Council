@@ -2,8 +2,8 @@
 
 - Proposal ID: `20260823-gate-c-qwen-beijing-temporary-key-renewal`
 - Proposed authorization ID: `20260823-gate-c-qwen-beijing-temporary-key-renewal`
-- Status: `in_progress` — offline implementation complete; clean commit pending;
-  no live request authorized
+- Status: `implemented` — offline implementation committed; final live SHA
+  approval pending; no live request authorized
 - Date prepared: 2026-08-23
 - Date approved: 2026-08-23 by Human Governor
 - Parent proposal: `20260821-phase-2-provider-verification`
@@ -200,8 +200,8 @@ token-mint/model request ceilings fail closed.
 
 ## State transition plan
 
-- Current: `in_progress` — offline implementation and verification complete;
-  clean commit pending; no request authorized.
+- Current: `implemented` — offline implementation and verification are committed;
+  final live SHA approval is pending; no request is authorized.
 - After a green clean commit: `implemented`, live execution still pending SHA
   approval.
 - After explicit full-SHA approval: one renewed run may start in the window.

@@ -583,7 +583,8 @@ terminally and the authorization cannot be reused.
 ## Gate C remaining execution conditions
 
 - Confirm the failed dedicated Key was revoked or reset.
-- Produce a clean implementation commit after the now-green offline checks.
+- [Completed] Produce a clean implementation commit after the green offline
+  checks.
 - Separately approve the full renewed implementation SHA before any request.
 
 ## References

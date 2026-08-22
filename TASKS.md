@@ -92,5 +92,5 @@ live execution remains separately gated.
   parent Key to the model adapter.
 - [x] Reconcile the abandoned local proxy-failure attempt to a documented
   terminal pre-provider failure without a network request.
-- [ ] Clean-commit offline preflight before any renewed live execution.
+- [x] Clean-commit offline preflight before any renewed live execution.
 - [ ] Separately approve the renewed implementation SHA.
